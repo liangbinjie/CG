@@ -7,3 +7,8 @@ typedef struct {
   double g;
   double b;
 } COLOR;
+
+typedef struct {
+  int x0, y0;
+  int x1, y1;
+} LINE_POINT;

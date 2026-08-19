@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "malloc.h"
 #include "utils.h"
@@ -7,45 +8,52 @@
 
 void draw_scene();
 
+// GLOBAL VARIABLES: include color buffer, points buffer, resolution, x lines, x times
 COLOR **buffer;
-
-int resolution; // global resolution variable
+LINE_POINT *points_buffer;
+int resolution, xlines, xtimes;
 
 int main(int argc, char *argv[])
 {
-    if (argc < 4) // if number of arguments < 4 -> print usage command
-    {
+    if (argc < 4) { // if number of arguments < 4 -> print usage command
+    
         printf("Usage: %s <resolution> <# of lines> <# of times>\n", argv[0]);
     }
-    else
-    {
+
+    else {
         // get arguments
         // should we check for valid numbers?
-        int xlines, xtimes;
         resolution = atoi(argv[1]);
         xlines = atoi(argv[2]);
         xtimes = atoi(argv[3]);
+        
+        // define color buffer of resolution x resolution
+        buffer = (COLOR **)malloc(resolution * sizeof(COLOR*));
+        for (int i = 0; i < resolution; i++) {
+            buffer[i] = (COLOR *)malloc(resolution * sizeof(COLOR));
+        }
+
+        // create random points based on how many lines requiered
+        // max random number is resolution-1
+
+        // start by initializing the points buffer
+        points_buffer = malloc(xlines * sizeof(LINE_POINT));
+
+        // generate random seed
+        srand(time(NULL));
+
+        // fill the points buffer with random points
+        for (int i = 0; i < xlines; i++) {  // for every line asked to create
+            points_buffer[i].x0 = (rand() % resolution);
+            points_buffer[i].y0 = (rand() % resolution);
+            points_buffer[i].x1 = (rand() % resolution);
+            points_buffer[i].y1 = (rand() % resolution);
+            printf("(%d, %d) - (%d, %d)\n", points_buffer[i].x0, points_buffer[i].y0, points_buffer[i].x1, points_buffer[i].y1 );
+        }
 
         printf("Creating a %d x %d screen\nDrawing %d lines for %d times\n", resolution, resolution, xlines, xtimes);
-        
-        int i, j;
 
-        buffer = (COLOR **)malloc(resolution * sizeof(COLOR*));
-        for (i = 0; i < resolution; i++) 
-            {
-            buffer[i] = (COLOR *)malloc(resolution * sizeof(COLOR));
-            }
-
-        for (i = 0; i < resolution; i++) 
-            {
-            for (j = 0; j < resolution; j++) 
-                {
-                    buffer[i][j].r = 0;
-                    buffer[i][j].g = 1;
-                    buffer[i][j].b = 0;
-                }
-            }
-
+        // create the glut display
         glutInit(&argc, argv);
         glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
         glutInitWindowSize(resolution, resolution);
@@ -58,16 +66,16 @@ int main(int argc, char *argv[])
 }
 
 void draw_scene() {
-    int i, j;
-    for (i = 0; i < resolution; i++) 
-        {
-        for (j = 0; j < resolution; j++) 
-            {
-                glColor3f(buffer[i][j].r, buffer[i][j].g, buffer[i][j].b);
-                glBegin(GL_POINTS);
-                glVertex2i(i, j);
-                glEnd();
-            }
-        }
-    glFlush();
+    // int i, j;
+    // for (i = 0; i < resolution; i++) 
+    //     {
+    //     for (j = 0; j < resolution; j++) 
+    //         {
+    //             glColor3f(1, buffer[i][j].g, buffer[i][j].b);
+    //             glBegin(GL_POINTS);
+    //             glVertex2i(i, j);
+    //             glEnd();
+    //         }
+    //     }
+    // glFlush();
 }
