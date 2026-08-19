@@ -56,5 +56,25 @@ void incremental_v2(int x0, int y0, int x1, int y1) {
 };
 
 void bresenham(int x0, int y0, int x1, int y1) {
-    printf("Bresenham\n");
+    int delta_E, delta_NE, d, xp, yp;
+
+    delta_E = 2 * (y1 - y0);
+    delta_NE = 2 * ((y1 - y0) - (x1 - x0));
+    d = 2 * (y1 - y0) - (x1 - x0);
+    xp = x0; yp = y0;
+
+    // plot(xp, yp);
+
+    while (xp < x1) {
+        if (d <= 0) {
+            d += delta_E;
+            xp++;
+        }
+        else {
+            xp++;
+            yp++;
+            d += delta_NE;
+        }
+        // plot(xp, yp);
+    }
 };

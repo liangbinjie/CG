@@ -5,6 +5,8 @@
 #include "utils.h"
 #include "mesa.h"
 
+void draw_scene();
+
 COLOR **buffer;
 
 int main(int argc, char *argv[])
@@ -24,10 +26,10 @@ int main(int argc, char *argv[])
 
         printf("Creating a %d x %d screen\nDrawing %d lines for %d times\n", resolution, resolution, xlines, xtimes);
         
-        brute_force();
-        incremental();
-        incremental_v2();
-        bresenham();
+        // brute_force();
+        // incremental();
+        // incremental_v2();
+        // bresenham();
 
         int i, j;
 
@@ -56,4 +58,19 @@ int main(int argc, char *argv[])
         glutDisplayFunc(draw_scene);
         glutMainLoop();
     }
+}
+
+void draw_scene() {
+    int i, j;
+    for (i = 0; i < 100; i++) 
+        {
+        for (j = 0; j < 100; j++) 
+            {
+                glColor3f(buffer[i][j].r, buffer[i][j].g, buffer[i][j].b);
+                glBegin(GL_POINTS);
+                glVertex2i(i, j);
+                glEnd();
+            }
+        }
+    glFlush();
 }
