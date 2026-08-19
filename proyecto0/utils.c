@@ -19,7 +19,7 @@ void brute_force(int x0, int y0, int x1, int y1) {
     m = (y1 - y0) / (x1 - x0);
     b = y0 - m + x0;
 
-    for (i = x0; i <= i; i++) {
+    for (i = x0; i <= x1; i++) {
         y = m * i + b;
         // plot(i, round(y));
     }
