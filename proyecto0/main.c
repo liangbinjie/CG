@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         glutInit(&argc, argv);
         glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
         glutInitWindowSize(resolution, resolution);
-        glutCreateWindow("Mesa Example");
+        glutCreateWindow("Tarea_Programada_0");
         glClear(GL_COLOR_BUFFER_BIT);
         gluOrtho2D(-0.5, resolution +0.5, -0.5, resolution + 0.5);
         glutDisplayFunc(draw_scene);
@@ -66,16 +66,24 @@ int main(int argc, char *argv[])
 }
 
 void draw_scene() {
-    // int i, j;
-    // for (i = 0; i < resolution; i++) 
-    //     {
-    //     for (j = 0; j < resolution; j++) 
-    //         {
-    //             glColor3f(1, buffer[i][j].g, buffer[i][j].b);
-    //             glBegin(GL_POINTS);
-    //             glVertex2i(i, j);
-    //             glEnd();
-    //         }
-    //     }
-    // glFlush();
+     int i, j;
+     
+     for (int i = 0; i < xlines; i++) {
+         brute_force (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         //incremental (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         //incremental_v2 (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         //bresenham (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+     }
+     
+     for (i = 0; i < resolution; i++) 
+         {
+          for (j = 0; j < resolution; j++) 
+            {
+             glColor3f (buffer[i][j].r,buffer[i][j].g,buffer[i][j].b);
+             glBegin(GL_POINTS);
+             glVertex2i(i,j);
+             glEnd();
+            }
+         }
+     glFlush();
 }
