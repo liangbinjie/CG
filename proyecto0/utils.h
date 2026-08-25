@@ -16,4 +16,8 @@ void bresenham(int x0, int y0, int x1, int y1);
 
 int max(int a, int b);
 
+void setColor(float r, float g, float b);
+
+void plot(int x, int y);
+
 #endif
