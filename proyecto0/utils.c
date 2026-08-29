@@ -153,25 +153,163 @@ void incremental_v2(int x0, int y0, int x1, int y1) {
 };
 
 void bresenham(int x0, int y0, int x1, int y1) {
-    int delta_E, delta_NE, d, xp, yp;
+    int Delta_NE, Delta_N, Delta_NO, Delta_O;
+    int Delta_SO, Delta_S, Delta_SE, Delta_E;
+    int d, Xp, Yp;
+    int delta_x = abs(x1 - x0);
+    int delta_y = abs(y1 - y0);
 
-    delta_E = 2 * (y1 - y0);
-    delta_NE = 2 * ((y1 - y0) - (x1 - x0));
-    d = 2 * (y1 - y0) - (x1 - x0);
-    xp = x0; yp = y0;
+    Xp = x0;
+    Yp = y0;
+    plot(Xp, Yp);
 
-    plot(xp, yp);
+    // Un solo punto
+    if (x0 == x1 && y0 == y1) {
+        return;
+    }
 
-    while (xp < x1) {
-        if (d <= 0) {
-            d += delta_E;
-            xp++;
+    // Octantes 1, 4, 5 y 8: X domina
+    if (delta_x >= delta_y) {
+        Delta_E = 2 * delta_y;
+        Delta_NE = 2 * (delta_y - delta_x);
+        Delta_O = 2 * delta_y;
+        Delta_NO = 2 * (delta_y - delta_x);
+        Delta_SO = 2 * (delta_y - delta_x);
+        Delta_SE = 2 * (delta_y - delta_x);
+
+        d = 2 * delta_y - delta_x;
+
+        if (x1 > x0 && y1 >= y0) {
+            // Primer octante: E o NE
+            while (Xp < x1) {
+                if (d <= 0) {
+                    Xp++;
+                    d += Delta_E;
+                }
+                else {
+                    Xp++;
+                    Yp++;
+                    d += Delta_NE;
+                }
+                plot(Xp, Yp);
+            }
+        }
+        else if (x1 < x0 && y1 >= y0) {
+            // Cuarto octante: O o NO
+            while (Xp > x1) {
+                if (d <= 0) {
+                    Xp--;
+                    d += Delta_O;
+                }
+                else {
+                    Xp--;
+                    Yp++;
+                    d += Delta_NO;
+                }
+                plot(Xp, Yp);
+            }
+        }
+        else if (x1 < x0 && y1 < y0) {
+            // Quinto octante: O o SO
+            while (Xp > x1) {
+                if (d <= 0) {
+                    Xp--;
+                    d += Delta_O;
+                }
+                else {
+                    Xp--;
+                    Yp--;
+                    d += Delta_SO;
+                }
+                plot(Xp, Yp);
+            }
         }
         else {
-            xp++;
-            yp++;
-            d += delta_NE;
+            // Octavo octante: E o SE
+            while (Xp < x1) {
+                if (d <= 0) {
+                    Xp++;
+                    d += Delta_E;
+                }
+                else {
+                    Xp++;
+                    Yp--;
+                    d += Delta_SE;
+                }
+                plot(Xp, Yp);
+            }
         }
-        plot(xp, yp);
+    }
+    // Octantes 2, 3, 6 y 7: Y domina
+    else {
+        Delta_N = 2 * delta_x;
+        Delta_NE = 2 * (delta_x - delta_y);
+        Delta_NO = 2 * (delta_x - delta_y);
+        Delta_S = 2 * delta_x;
+        Delta_SO = 2 * (delta_x - delta_y);
+        Delta_SE = 2 * (delta_x - delta_y);
+
+        d = 2 * delta_x - delta_y;
+
+        if (y1 > y0 && x1 >= x0) {
+            // Segundo octante: N o NE
+            while (Yp < y1) {
+                if (d <= 0) {
+                    Yp++;
+                    d += Delta_N;
+                }
+                else {
+                    Yp++;
+                    Xp++;
+                    d += Delta_NE;
+                }
+                plot(Xp, Yp);
+            }
+        }
+        else if (y1 > y0 && x1 < x0) {
+            // Tercer octante: N o NO
+            while (Yp < y1) {
+                if (d <= 0) {
+                    Yp++;
+                    d += Delta_N;
+                }
+                else {
+                    Yp++;
+                    Xp--;
+                    d += Delta_NO;
+                }
+                plot(Xp, Yp);
+            }
+        }
+        else if (y1 < y0 && x1 < x0) {
+            // Sexto octante: S o SO
+            while (Yp > y1) {
+                if (d <= 0) {
+                    Yp--;
+                    d += Delta_S;
+                }
+                else {
+                    Yp--;
+                    Xp--;
+                    d += Delta_SO;
+                }
+                plot(Xp, Yp);
+            }
+        }
+        else {
+            // Septimo octante: S o SE
+            while (Yp > y1) {
+                if (d <= 0) {
+                    Yp--;
+                    d += Delta_S;
+                }
+                else {
+                    Yp--;
+                    Xp++;
+                    d += Delta_SE;
+                }
+                plot(Xp, Yp);
+            }
+        }
     }
 };

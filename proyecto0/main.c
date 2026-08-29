@@ -87,14 +87,14 @@ void draw_scene() {
          setColor(1.0, 0, 0);
          brute_force (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
          
-         //setColor(0, 1.0, 0);
-         //incremental (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         setColor(0, 1.0, 0);
+         incremental (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
          
-         //setColor(0, 0, 1.0);
-         //incremental_v2 (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         setColor(0, 0, 1.0);
+         incremental_v2 (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
          
-         //setColor(1.0, 1.0, 0);
-         //bresenham (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         setColor(1.0, 1.0, 0);
+         bresenham (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
      }
      
      for (i = 0; i < resolution; i++) 
