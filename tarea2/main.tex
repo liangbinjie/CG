@@ -1,0 +1,81 @@
+\documentclass{report}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+
+\usepackage[english]{babel}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{listings}
+
+\lstset{
+    language=C,
+    basicstyle=\footnotesize,
+    numbers=left,
+    stepnumber=1,
+    showstringspaces=false,
+    tabsize=1,
+    breaklines=true,
+    breakatwhitespace=false,
+}
+
+
+\def \unit{School of Computer Engineering}
+\def \program{Computer Engineering Bachelor}
+\def \course{IC8059 - Introduction to Computer Graphics}
+\def \title{Homework}
+\def \subtitle {Clipping Algorithms}
+\def \authors{
+    Andrés Canossa Castro\\
+    acanossa\@estudiantec.cr\\
+
+    \vspace{0.5cm}
+    
+    Binjie Liang\\
+    bliang\@estudiantec.cr\\
+    
+    \vspace{0.5cm}
+    
+    William Jiménez Venegas\\
+    wijimenez\@estudiantec.cr\\
+    2023396021
+}
+\def \date{September 2026}
+\def \place{
+    San José, 
+    Costa Rica
+}
+
+% Inicia el documento 
+\begin{document}
+
+% Inserta la portada del documento
+\input{front_page}
+
+\tableofcontents
+
+\chapter{Cohen-Sutherland Algorithm}\label{cohen-sutherland}
+
+
+
+\chapter{Liang-Barsky Algorithm}\label{liang-barsky}
+
+
+
+\chapter{Cyrus-Beck Algorithm}\label{cyrus-beck}
+
+
+
+\chapter{Nicholl-Lee-Nicholl Algorithm}\label{n-l-n}
+
+
+
+\chapter{Skula Algorithm}\label{skula}
+
+
+
+\bibliographystyle{ieeetr}
+\bibliography{ref}
+
+\end{document}
