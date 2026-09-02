@@ -1,0 +1,14 @@
+
+\section{Cyrus-Beck Algorithm}
+
+\subsection{History}
+The Cyrus-Beck algorithm was formally introduced in 1978 by Mike Cyrus and Jay Beck. This algorithm represented a major evolutionary step in computer graphics because prior algorithms, such as the widely used Cohen-Sutherland method, were strictly limited to clipping against upright, rectangular windows \cite{MatthesDrakopoulos2022}. Cyrus and Beck introduced a mathematical framework based on parametric equations that allowed for line clipping against any arbitrary convex polygon \cite{CyrusBeck1978}. By shifting from region-based encoding to a purely mathematical vector approach, this algorithm resolved the convex polygon limitation and subsequently paved the way for other highly efficient parametric algorithms, such as the Liang-Barsky method \cite{MatthesDrakopoulos2022}.
+
+\subsection{General Description}
+The Cyrus-Beck algorithm is classified as a parametric line-clipping algorithm \cite{MatthesDrakopoulos2022}. Instead of using region codes to classify line endpoints, it relies on the parametric representation of the line segment and utilizes vector dot products to find intersections \cite{CyrusBeck1978}. 
+
+To execute this, the line segment is first defined parametrically as $P(t) = P_0 + t(P_1 - P_0)$, where the parameter $t$ ranges from $0$ to $1$, and $P_0$ and $P_1$ are the endpoints of the line segment \cite{CyrusBeck1978}. Let $D = P_1 - P_0$ represent the direction vector of the line. For every edge of the convex clipping polygon, an inward-pointing normal vector ($N_i$) is calculated, and an arbitrary point ($P_E$) on that specific edge is selected \cite{MatthesDrakopoulos2022}.
+The algorithm then calculates the intersection of the infinite line with every infinite edge of the polygon. This is achieved by setting the dot product of the normal vector and the vector from $P_E$ to $P(t)$ to zero. Solving this equation for $t$ yields $t = \frac{N_i \cdot (P_0 - P_E)}{-N_i \cdot D}$ \cite{CyrusBeck1978}.
+Furthermore, the denominator of this intersection equation, $-N_i \cdot D$, dictates the specific nature of the intersection. If the dot product is zero, the line is parallel to the edge; if the product is negative, the line is classified as ``Potentially Entering'' (PE) the clipping region; and if it is positive, the intersection is classified as ``Potentially Leaving'' (PL) \cite{CyrusBeck1978}.
+To determine the final visible segment, the algorithm calculates the maximum $t$-value among all PE intersections ($t_E$) and the minimum $t$-value among all PL intersections ($t_L$).
+If $t_E > t_L$, it indicates that the line bypasses the polygon entirely and must be rejected. Otherwise, the segment bounded by $t_E$ and $t_L$ is drawn \cite{ MatthesDrakopoulos2022}.
