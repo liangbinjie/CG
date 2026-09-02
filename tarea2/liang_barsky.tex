@@ -1,0 +1,69 @@
+%==================================================================================
+
+\section{Liang-Barsky Algorithm}
+
+\subsection{History}
+
+The Liang--Barsky line-clipping algorithm was introduced by You-Dong Liang and Brian A. Barsky in their 1984 paper entitled \textit{A New Concept and Method for Line Clipping}, published in \textit{ACM Transactions on Graphics} \cite{LiangBarsky1984}. The authors proposed a mathematical and parametric approach to clipping that differs substantially from the region-code strategy used by the Cohen--Sutherland algorithm.
+
+The method was developed from ideas associated with parametric clipping, particularly the Cyrus--Beck approach. Instead of repeatedly clipping an endpoint and recalculating its position, Liang and Barsky represent the entire line segment using a parameter and determine the interval of parameter values for which the line lies inside the clipping region \cite{MatthesDrakopoulos2022}.
+
+The original work was not limited to two-dimensional line clipping. Liang and Barsky presented a family of algorithms for two-dimensional, three-dimensional, and four-dimensional clipping using homogeneous coordinates. Their formulation was also designed so that the same general principle could be extended to convex viewing volumes \cite{LiangBarsky1984,GeneralizationLiangBarsky}.
+
+The original paper experimentally compared the method with the traditional Sutherland--Cohen algorithm. For its two-dimensional tests, Liang and Barsky reported that their implementation required an average of 333 seconds, compared with 519 seconds for the Sutherland--Cohen implementation, which represented a 36 percent improvement under the hardware and experimental conditions used in the study \cite{LiangBarsky1984}. The authors attributed part of this improvement to the ability of the algorithm to reject invisible segments early and to avoid unnecessary repeated intersection calculations.
+
+\subsection{General Description}
+
+The Liang--Barsky algorithm is a parametric line-clipping method. Instead of classifying the endpoints into regions, it represents a line segment as a function of a parameter $t$.
+
+Consider a line segment with endpoints:
+
+\[P_0=(x_0,y_0)\]
+\[P_1=(x_1,y_1)\]
+
+Define
+
+\[\Delta x=x_1-x_0\]
+\[\Delta y=y_1-y_0\]
+
+The parametric representation of the segment, with $0\leq t\leq1$, is then
+
+\[x(t)=x_0+t\Delta x\]
+\[y(t)=y_0+t\Delta y\]
+
+When $t=0$, the point corresponds to $P_0$, while $t=1$ corresponds to $P_1$. Every value between zero and one represents a point located somewhere between the two original endpoints.
+
+For a rectangular clipping window, a visible point must satisfy
+
+\[x_{\min}\leq x(t)\leq x_{\max}\]
+\[y_{\min}\leq y(t)\leq y_{\max}\]
+
+Substituting the parametric equations gives
+
+\[x_{\min}\leq x_0+t\Delta x\leq x_{\max}\]
+\[y_{\min}\leq y_0+t\Delta y\leq y_{\max}\]
+
+Liang and Barsky rewrite these clipping conditions into a common form \cite{LiangBarsky1984}:
+
+\[p_i t \leq q_i, \qquad i=1,2,3,4\]
+
+where
+
+\[
+\begin{array}{c|c|c}
+i & p_i & q_i \\
+\hline
+1 & -\Delta x & x_0-x_{\min} \\
+2 &  \Delta x & x_{\max}-x_0 \\
+3 & -\Delta y & y_0-y_{\min} \\
+4 &  \Delta y & y_{\max}-y_0
+\end{array}
+\]
+
+The sign of $p_i$ indicates how the line moves relative to the corresponding clipping boundary.
+
+If $p_i<0$ the line moves from the invisible side of a boundary toward its visible side. Therefore, the corresponding value $t=\frac{q_i}{p_i}$ is a potential \textit{entering} parameter. If $p_i>0$ the line moves from the visible side toward the invisible side. Therefore, the corresponding value is a potential \textit{leaving} parameter. Finally, if $p_i=0$ the line is parallel to the corresponding clipping boundary. If, at the same time $q_i<0$ the complete line lies outside that boundary and can immediately be rejected \cite{LiangBarsky1984}.
+
+Compared with Cohen--Sutherland, Liang--Barsky normally requires fewer intersection calculations because it first determines the final parameter interval and calculates the actual clipped endpoints only after that interval has been established. \cite{LiangBarsky1984,MatthesDrakopoulos2022}.
+
+%==================================================================================

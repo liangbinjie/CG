@@ -1,0 +1,60 @@
+%==================================================================================
+
+\section{Cohen-Sutherland Algorithm}
+
+\subsection{History}
+
+The Cohen--Sutherland algorithm is one of the earliest and most influential line-clipping techniques in computer graphics. Line-clipping methods based on rectangular viewing windows were developed during the early stages of interactive computer graphics, particularly in connection with flight-simulation
+applications. Line-clipping techniques were developed and used in a flight-simulator project led by Danny Cohen, while efficient position coding for line segments was introduced by Sproull and
+Sutherland \cite{MatthesDrakopoulos2022}.
+
+The algorithm became important because it provided an efficient way of determining whether a line segment was completely visible, completely invisible, or partially visible before performing more expensive intersection calculations. Rather than immediately calculating the intersection of a line with every boundary of the clipping window, the algorithm assigns binary region codes to the endpoints of the line and uses logical operations to eliminate simple cases.
+
+Actually, Cohen--Sutherland is representative of the \textit{Divide and Conquer approach}. Its use of binary outcodes makes it particularly suitable for rectangular clipping windows and allows trivial acceptance and rejection to be performed efficiently using bitwise operations \cite{MatthesDrakopoulos2022,Clipping6thSem}. It later became an important reference point for the evaluation of other line-clipping methods, including the Liang--Barsky algorithm \cite{LiangBarsky1984}.
+
+
+\subsection{General Description}
+
+The Cohen--Sutherland algorithm determines the visible portion of a line segment with respect to a rectangular clipping window. Let the clipping window be defined by: $x_{\min} \leq x \leq x_{\max}$ and $y_{\min} \leq y \leq y_{\max}$
+
+The four boundaries of the rectangle are conceptually extended to infinity, dividing the two-dimensional plane into nine regions: one region inside the window and eight regions outside it. Each endpoint of a line segment is assigned a four-bit binary code, generally called a \textit{region code} or \textit{outcode}, indicating its position relative to the four boundaries \cite{MatthesDrakopoulos2022}.
+
+A common convention for the bits is:
+
+\[
+\begin{array}{c|c|c}
+\text{Region} & \text{Condition} & \text{Bit} \\
+\hline
+\text{Top}    & y > y_{\max} & 1000 \\
+\text{Bottom} & y < y_{\min} & 0100 \\
+\text{Right}  & x > x_{\max} & 0010 \\
+\text{Left}   & x < x_{\min} & 0001
+\end{array}
+\]
+
+A point that lies completely inside the clipping window therefore has the outcode 0000.
+
+The codes can also be combined. For example, a point located above and to the left of the clipping window has both the \textit{Top} and \textit{Left} bits enabled.
+
+Suppose that a line segment has endpoints $P_0$ and $P_1$, with outcodes $C_0$ and $C_1$. Three main situations can occur.
+
+First, if both endpoints are inside the clipping window,
+
+\[C_0 = 0000 \qquad \text{and} \qquad C_1 = 0000\]
+
+the complete segment is visible and can be immediately accepted. This is known
+as \textit{trivial acceptance}. Equivalently,
+
+\[C_0 \; \mathrm{OR} \; C_1 = 0000\]
+
+Second, if both endpoints share an outside region, the complete segment lies outside at least one boundary of the window. This can be detected using a bitwise AND operation:
+
+\[C_0 \; \mathrm{AND} \; C_1 \neq 0000\]
+
+In this situation, the line can be immediately discarded. This is known as \textit{trivial rejection}.
+
+Finally, if neither condition is satisfied, the line is potentially partially visible. The algorithm then calculates an intersection between the line and one of the clipping boundaries, replaces the corresponding outside endpoint with the newly calculated point, generates a new outcode, and repeats the tests until the line can be accepted or rejected \cite{MatthesDrakopoulos2022,Clipping6thSem}.
+
+The main advantage of this procedure is that many line segments can be accepted or rejected using only comparisons and bitwise operations. However, for line segments that cannot be trivially classified, several intersection calculations may be required because clipping and outcode evaluation are performed iteratively. This characteristic motivated the development of parametric alternatives such as the Liang--Barsky algorithm \cite{MatthesDrakopoulos2022,LiangBarsky1984}.
+
+%==================================================================================

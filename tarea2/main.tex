@@ -1,13 +1,12 @@
-\documentclass{report}
+\documentclass{article}
 \usepackage[utf8]{inputenc}
 \usepackage{hyperref}
 \usepackage{float}
 \usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
 
 \usepackage[english]{babel}
-\usepackage{hyperref}
-\usepackage{graphicx}
-\usepackage{listings}
 
 \lstset{
     language=C,
@@ -47,35 +46,30 @@
     Costa Rica
 }
 
-% Inicia el documento 
 \begin{document}
-
-% Inserta la portada del documento
 \input{front_page}
 
-\tableofcontents
-
-\chapter{Cohen-Sutherland Algorithm}\label{cohen-sutherland}
+\section{Cohen-Sutherland Algorithm}
 
 
 
-\chapter{Liang-Barsky Algorithm}\label{liang-barsky}
+\section{Liang-Barsky Algorithm}
 
 
 
-\chapter{Cyrus-Beck Algorithm}\label{cyrus-beck}
+\section{Cyrus-Beck Algorithm}
 
 
 
-\chapter{Nicholl-Lee-Nicholl Algorithm}\label{n-l-n}
+\section{Nicholl-Lee-Nicholl Algorithm}
 
 
 
-\chapter{Skula Algorithm}\label{skula}
+\section{Skula Algorithm}
 
 
 
-\bibliographystyle{ieeetr}
+\bibliographystyle{IEEEtran}
 \bibliography{ref}
 
 \end{document}
