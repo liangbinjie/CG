@@ -18,6 +18,12 @@ int max(int a, int b);
 
 void setColor(float r, float g, float b);
 
-void plot(int x, int y);
+typedef void (*Algorithm)(int, int, int, int);
+
+typedef void (*Plot)(int, int);
+
+void plotEmpty(int x, int y);
+
+void plotMesa(int x, int y);
 
 #endif

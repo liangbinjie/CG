@@ -11,6 +11,7 @@ void draw_scene();
 // GLOBAL VARIABLES: include color buffer, points buffer, resolution, x lines, x times
 COLOR **buffer;
 LINE_POINT *points_buffer;
+Plot plot;
 int resolution, xlines, xtimes;
 
 int main(int argc, char *argv[])
@@ -78,24 +79,46 @@ void draw_axes() {
     }
 }
 
+double calculate_time(Algorithm algorithm, int xlines, int xtimes){
+    clock_t start, end;
+    
+    start = clock();
+     for (int j = 0; j < xtimes; j++){
+         for (int i = 0; i < xlines; i++) {
+             algorithm (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
+         }
+     }
+     end = clock();
+     
+     return (double)(end - start) / CLOCKS_PER_SEC;
+}
+
 void draw_scene() {
      int i, j;
+     double time;
      
+     plot = plotMesa;
      draw_axes();
      
-     for (int i = 0; i < xlines; i++) {
-         setColor(1.0, 0, 0);
-         brute_force (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
-         
-         setColor(0, 1.0, 0);
-         incremental (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
-         
-         setColor(0, 0, 1.0);
-         incremental_v2 (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
-         
-         setColor(1.0, 1.0, 0);
-         bresenham (points_buffer[i].x0,points_buffer[i].y0,points_buffer[i].x1,points_buffer[i].y1);
-     }
+     time = 0.0;
+     setColor(1.0, 0, 0);
+     time = calculate_time(brute_force, xlines, xtimes);
+     printf("Brute Force: %f seconds\n", time);
+     
+     time = 0.0;
+     setColor(0, 1.0, 0);
+     time = calculate_time(incremental, xlines, xtimes);
+     printf("Incremental: %f seconds\n", time);
+     
+     time = 0.0;
+     setColor(0, 0, 1.0);
+     time = calculate_time(incremental_v2, xlines, xtimes);
+     printf("Incremental V2: %f seconds\n", time);
+     
+     time = 0.0;
+     setColor(1.0, 1.0, 0);
+     time = calculate_time(bresenham, xlines, xtimes);
+     printf("Bresenham: %f seconds\n", time);
      
      for (i = 0; i < resolution; i++) 
          {

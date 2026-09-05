@@ -7,16 +7,23 @@
 // The buffer is needed for plot
 extern COLOR **buffer;
 extern int resolution;
+extern Plot plot;
 COLOR color;
 
 // Function definition
 
-int max(int a, int y) {
-    if (a >= y) {
-        return a;
-    }
-    else {
-        return y;
+void plotEmpty(int x, int y) {
+    return;
+}
+
+void plotMesa(int x, int y) {
+    int newX = x + resolution / 2;
+    int newY = y + resolution / 2;
+    
+    if (newX >= 0 && newX < resolution && newY >= 0 && newY < resolution) {
+        buffer[newX][newY].r = color.r;
+        buffer[newX][newY].g = color.g;
+        buffer[newX][newY].b = color.b;
     }
 }
 
@@ -26,14 +33,12 @@ void setColor(float r, float g, float b) {
     color.b = b;
 }
 
-void plot(int x, int y) {
-    int newX = x + resolution / 2;
-    int newY = y + resolution / 2;
-    
-    if (newX >= 0 && newX < resolution && newY >= 0 && newY < resolution) {
-        buffer[newX][newY].r = color.r;
-        buffer[newX][newY].g = color.g;
-        buffer[newX][newY].b = color.b;
+int max(int a, int y) {
+    if (a >= y) {
+        return a;
+    }
+    else {
+        return y;
     }
 }
 
