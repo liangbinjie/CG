@@ -120,6 +120,11 @@ void draw_scene() {
      time = calculate_time(bresenham, xlines, xtimes);
      printf("Bresenham: %f seconds\n", time);
      
+     time = 0.0;
+     setColor(1.0, 0, 1.0);
+     time = calculate_time(bressenham_line, xlines, xtimes);
+     printf("Bresenham Assembly: %f seconds\n", time);
+     
      for (i = 0; i < resolution; i++) 
          {
           for (j = 0; j < resolution; j++) 

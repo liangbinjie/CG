@@ -14,6 +14,10 @@ void incremental_v2(int x0, int y0, int x1, int y1);
 
 void bresenham(int x0, int y0, int x1, int y1);
 
+void bressenham_line(int x0, int y0, int x1, int y1);
+
+// Auxiliary functions
+
 int max(int a, int b);
 
 void setColor(float r, float g, float b);
