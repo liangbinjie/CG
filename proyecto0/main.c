@@ -136,6 +136,7 @@ void draw_scene() {
     static int run = 0;
 
     if (run) {
+        render(); // if it is running, just render the actual lines
         return;
     }
 
