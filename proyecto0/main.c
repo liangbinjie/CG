@@ -14,20 +14,59 @@ LINE_POINT *points_buffer;
 Plot plot;
 int resolution, xlines, xtimes;
 
-int main(int argc, char *argv[])
-{
-    if (argc < 4) { // if number of arguments < 4 -> print usage command
-    
-        printf("Usage: %s <resolution> <# of lines> <# of times>\n", argv[0]);
+int is_valid_Int(char *str) {
+    int i = 0;
+
+    if (str[i] == '\0') {
+        return 0;
     }
 
+    while (str[i] != '\0') {
+        if ((str[i] < '0' || str[i] > '9')) {
+            return 0;
+        }
+        i++;
+    }
+
+    return 1;
+}
+
+int validate_input(int argc, char *argv[]) {
+    if (argc < 4) { // if number of arguments < 4 -> print usage command
+        printf("Usage: %s <resolution> <# of lines> <# of times>\n", argv[0]);
+        return 0;
+    } 
+
+    if (is_valid_Int(argv[1]) != 1 || is_valid_Int(argv[2]) != 1 || is_valid_Int(argv[3]) != 1 ) {
+        printf("Usage: %s <resolution> <# of lines> <# of times>\n", argv[0]);
+        return 0;
+    }
+
+    resolution = atoi(argv[1]);
+    xlines = atoi(argv[2]);
+    xtimes = atoi(argv[3]);
+    return 1;
+}
+
+void render() {
+    for (int i = 0; i < resolution; i++) {
+        for (int j = 0; j < resolution; j++) {
+            glColor3f (buffer[i][j].r,buffer[i][j].g,buffer[i][j].b);
+            glBegin(GL_POINTS);
+            glVertex2i(i - resolution/2, j - resolution/2);
+            glEnd();
+        }
+    }
+    glFlush();
+}
+
+int main(int argc, char *argv[])
+{
+    if (validate_input(argc, argv) == 0) {
+        return 0;
+    } 
+
     else {
-        // get arguments
-        // should we check for valid numbers?
-        resolution = atoi(argv[1]);
-        xlines = atoi(argv[2]);
-        xtimes = atoi(argv[3]);
-        
         // define color buffer of resolution x resolution
         buffer = (COLOR **)malloc(resolution * sizeof(COLOR*));
         for (int i = 0; i < resolution; i++) {
@@ -49,7 +88,7 @@ int main(int argc, char *argv[])
             points_buffer[i].y0 = (rand() % resolution) - resolution/2;
             points_buffer[i].x1 = (rand() % resolution) - resolution/2;
             points_buffer[i].y1 = (rand() % resolution) - resolution/2;
-            printf("(%d, %d) - (%d, %d)\n", points_buffer[i].x0, points_buffer[i].y0, points_buffer[i].x1, points_buffer[i].y1 );
+            // printf("(%d, %d) - (%d, %d)\n", points_buffer[i].x0, points_buffer[i].y0, points_buffer[i].x1, points_buffer[i].y1 );
         }
 
         printf("Creating a %d x %d screen\nDrawing %d lines for %d times\n", resolution, resolution, xlines, xtimes);
@@ -94,46 +133,53 @@ double calculate_time(Algorithm algorithm, int xlines, int xtimes){
 }
 
 void draw_scene() {
-     int i, j;
-     double time;
-     
-     plot = plotMesa;
-     draw_axes();
-     
-     time = 0.0;
-     setColor(1.0, 0, 0);
-     time = calculate_time(brute_force, xlines, xtimes);
-     printf("Brute Force: %f seconds\n", time);
-     
-     time = 0.0;
-     setColor(0, 1.0, 0);
-     time = calculate_time(incremental, xlines, xtimes);
-     printf("Incremental: %f seconds\n", time);
-     
-     time = 0.0;
-     setColor(0, 0, 1.0);
-     time = calculate_time(incremental_v2, xlines, xtimes);
-     printf("Incremental V2: %f seconds\n", time);
-     
-     time = 0.0;
-     setColor(1.0, 1.0, 0);
-     time = calculate_time(bresenham, xlines, xtimes);
-     printf("Bresenham: %f seconds\n", time);
-     
-     time = 0.0;
-     setColor(1.0, 0, 1.0);
-     time = calculate_time(bressenham_line, xlines, xtimes);
-     printf("Bresenham Assembly: %f seconds\n", time);
-     
-     for (i = 0; i < resolution; i++) 
-         {
-          for (j = 0; j < resolution; j++) 
-            {
-             glColor3f (buffer[i][j].r,buffer[i][j].g,buffer[i][j].b);
-             glBegin(GL_POINTS);
-             glVertex2i(i - resolution/2, j - resolution/2);
-             glEnd();
-            }
-         }
-     glFlush();
+    static int run = 0;
+
+    if (run) {
+        return;
+    }
+
+    run = 1;
+
+    double time;
+    
+    plot = plotMesa;
+    draw_axes();
+    
+    time = 0.0;
+    setColor(1.0, 0, 0);
+    time = calculate_time(brute_force, xlines, xtimes);
+    printf("Brute Force: %f seconds\n", time);
+    
+    render();
+
+    time = 0.0;
+    setColor(0, 1.0, 0);
+    time = calculate_time(incremental, xlines, xtimes);
+    printf("Incremental: %f seconds\n", time);
+    
+    render();
+
+    time = 0.0;
+    setColor(0, 0, 1.0);
+    time = calculate_time(incremental_v2, xlines, xtimes);
+    printf("Incremental V2: %f seconds\n", time);
+    
+    render();
+
+    time = 0.0;
+    setColor(1.0, 1.0, 0);
+    time = calculate_time(bresenham, xlines, xtimes);
+    printf("Bresenham: %f seconds\n", time);
+
+    render();
+    
+    time = 0.0;
+    setColor(1.0, 0, 1.0);
+    time = calculate_time(bressenham_line, xlines, xtimes);
+    printf("Bresenham Assembly: %f seconds\n", time);
+
+    render();
+    
+    
 }

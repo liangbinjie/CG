@@ -24,7 +24,6 @@ extern plotMesa
 
 bressenham_line:
     ; Input: rdi = x0, rsi = y0, rdx = x1, rcx = y1
-    ; Output: None (calls plot function to draw points)
     
     ; The arguments from C (int) are converted in signed 64-bit
     movsxd rdi, edi
@@ -63,7 +62,7 @@ bressenham_line:
     jmp .y_dominant     ; else, Y is dominant, which means, we do bressenhamV
 
 .x_dominant:
-    ; Bressenham's algorithm for X dominant lines (bressenhamH())
+    ; X dominant lines (bressenhamH())
 
     ; SWAP if necessary to ensure we draw from left to right
     cmp rdi, rdx       ; compare x0 and x1
@@ -167,7 +166,7 @@ bressenham_line:
 
 
 .y_dominant:
-    ; Bressenham's algorithm for Y dominant lines (bressenhamV())
+    ; Y dominant lines (bressenhamV())
 
     ; SWAP if necessary to ensure we draw from bottom to top
     cmp rsi, rcx       ; compare y0 and y1
