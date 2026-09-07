@@ -16,6 +16,8 @@ void bresenham(int x0, int y0, int x1, int y1);
 
 void bressenham_line(int x0, int y0, int x1, int y1);
 
+void bressenham_line_empty(int x0, int y0, int x1, int y1);
+
 // Auxiliary functions
 
 int max(int a, int b);

@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
             // printf("(%d, %d) - (%d, %d)\n", points_buffer[i].x0, points_buffer[i].y0, points_buffer[i].x1, points_buffer[i].y1 );
         }
 
-        printf("Creating a %d x %d screen\nDrawing %d lines for %d times\n", resolution, resolution, xlines, xtimes);
+        printf("Creating a %d x %d screen\nDrawing %d lines for %d times\n\n", resolution, resolution, xlines, xtimes);
 
         // create the glut display
         glutInit(&argc, argv);
@@ -147,6 +147,8 @@ void draw_scene() {
     plot = plotMesa;
     draw_axes();
     
+    // Algorithms with normal plot
+    
     time = 0.0;
     setColor(1.0, 0, 0);
     time = calculate_time(brute_force, xlines, xtimes);
@@ -182,5 +184,28 @@ void draw_scene() {
 
     render();
     
+    // Algorithms with empty plot
+    
+    plot = plotEmpty;
+    
+    time = 0.0;
+    time = calculate_time(brute_force, xlines, xtimes);
+    printf("Empty Brute Force: %f seconds\n", time);
+
+    time = 0.0;
+    time = calculate_time(incremental, xlines, xtimes);
+    printf("Empty Incremental: %f seconds\n", time);
+
+    time = 0.0;
+    time = calculate_time(incremental_v2, xlines, xtimes);
+    printf("Empty Incremental V2: %f seconds\n", time);
+
+    time = 0.0;
+    time = calculate_time(bresenham, xlines, xtimes);
+    printf("Empty Bresenham: %f seconds\n", time);
+    
+    time = 0.0;
+    time = calculate_time(bressenham_line_empty, xlines, xtimes);
+    printf("Empty Bresenham Assembly: %f seconds\n", time);
     
 }
