@@ -88,6 +88,59 @@ Pixel **load_avs(const char *filename) {
     return image;
 }
 
+int save_avs(const char *filename, Pixel **image, int image_width, int image_height) {
+    FILE *file = fopen(filename, "wb");
+
+    if (file == NULL) {
+        printf("Could not create file.\n");
+        return -1;
+    }
+
+    unsigned char buffer[4];
+
+    // width and height in big-endian order
+    buffer[0] = (unsigned char)((image_width >> 24) & 0xff);
+    buffer[1] = (unsigned char)((image_width >> 16) & 0xff);
+    buffer[2] = (unsigned char)((image_width >> 8) & 0xff);
+    buffer[3] = (unsigned char)(image_width & 0xff);
+
+    if (fwrite(buffer, 1, 4, file) != 4) {
+        fclose(file);
+        return -1;
+    }
+
+    buffer[0] = (unsigned char)((image_height >> 24) & 0xff);
+    buffer[1] = (unsigned char)((image_height >> 16) & 0xff);
+    buffer[2] = (unsigned char)((image_height >> 8) & 0xff);
+    buffer[3] = (unsigned char)(image_height & 0xff);
+
+    if (fwrite(buffer, 1, 4, file) != 4) {
+        fclose(file);
+        return -1;
+    }
+
+    // every pixel in A-R-G-B order
+    for (int y = 0; y < image_height; y++) {
+        for (int x = 0; x < image_width; x++) {
+            buffer[0] = image[y][x].a;
+            buffer[1] = image[y][x].r;
+            buffer[2] = image[y][x].g;
+            buffer[3] = image[y][x].b;
+
+            if (fwrite(buffer, 1, 4, file) != 4) {
+                fclose(file);
+                return -1;
+            }
+        }
+    }
+
+    if (fclose(file) != 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -104,6 +157,15 @@ int main(int argc, char *argv[]) {
 
     printf("Width: %d x Height: %d\n", width, height);
 
+    if (save_avs("image_copy.avs", image, width, height) == 0) {
+        printf("Image saved successfully.\n");
+    } else {
+        printf("Could not save image.\n");
+    }
+
+    for (int y = 0; y < height; y++) {
+        free(image[y]);
+    }
     free(image);
 
     return 0;
