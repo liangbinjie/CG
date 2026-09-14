@@ -1,6 +1,83 @@
 %==================================================================================
 \section{Load Matrix with .avs}
+The function \texttt{load\_avs} reads an AVS file and returns a matrix of pixels in memory.
 
+As explained earlier, the AVS format stores the image width and height in the first eight bytes of the file, followed by the pixel data. The function reads this information and allocates memory for a matrix of pixels.
+
+Given that we are working in a little-endian architecture, the function must convert the big-endian bytes of the header to little-endian integers.
+
+First of all, we have to define a structure to represent a pixel in memory:
+
+\begin{lstlisting}
+typedef struct {
+    unsigned char a; // alpha channel
+    unsigned char r; // red channel
+    unsigned char g; // green channel
+    unsigned char b; // blue channel
+} Pixel;
+\end{lstlisting}
+
+This structure allows us to store the four channels of a pixel in a single object. 
+
+To start loading the image, we open the AVS file in binary read mode, then we read the first four bytes to obtain the image width, and the next four bytes to obtain the image height. We convert these bytes from big-endian to little-endian integers.
+
+\begin{lstlisting}
+    FILE *file = fopen(filename, "rb"); // read file as binaries
+
+    if (file == NULL) {
+        printf("No file found.\n");
+        return NULL;
+    }
+
+    // define a 4 bytes buffer to read the header
+    unsigned char buffer[4];
+
+    // read first 4 bytes of the header -> width
+    fread(buffer, 1, 4, file);
+
+    // arrange big endian bytes to little endian
+    width = ((int)buffer[0] << 24) |
+            ((int)buffer[1] << 16) |
+            ((int)buffer[2] << 8) |
+            buffer[3];
+
+    // read the follwing 4 bytes -> height
+    fread(buffer, 1, 4, file);
+
+    // arrange header big endian bytes to little endian
+    height = ((int)buffer[0] << 24) |
+            ((int)buffer[1] << 16) |
+            ((int)buffer[2] << 8) |
+            buffer[3];
+\end{lstlisting}
+
+After obtaining the dimensions, we allocate memory for a matrix of pixels with the specified width and height. 
+
+\begin{lstlisting}
+    Pixel **image = malloc(height *sizeof(Pixel *));
+
+    for (int y=0; y < height; y++) {
+        // for every y in height, create row
+        image[y] = malloc(width * sizeof(Pixel));
+    }
+\end{lstlisting}
+
+We then read the pixel data from the file, storing each pixel in the corresponding position in the matrix.
+
+\begin{lstlisting}
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            fread(buffer, 1, 4, file);
+            image[y][x].a = buffer[0];
+            image[y][x].r = buffer[1];
+            image[y][x].g = buffer[2];
+            image[y][x].b = buffer[3];
+        }
+    }
+\end{lstlisting}
+
+
+Finally, we close the file and return the pointer to the matrix of pixels.
 
 
 \section{Save .avs from memory}

@@ -21,12 +21,6 @@ typedef struct {
     uint8_t b;
 } Pixel;
 
-typedef struct {
-    int width;
-    int height;
-    Pixel **pixels;
-} Image;
-
 // Load .avs file into a matrix
 // InputL: filename, width, height
 // Output: Pixel struct matrix
@@ -38,13 +32,13 @@ Pixel **load_avs(const char *filename) {
         return NULL;
     }
 
-    
+    // define a 4 bytes buffer to read the header
     unsigned char buffer[4];
 
     // read first 4 bytes of the header -> width
     fread(buffer, 1, 4, file);
 
-    // arrange big ndian bytes to little endian
+    // arrange big endian bytes to little endian
     width = ((int)buffer[0] << 24) |
             ((int)buffer[1] << 16) |
             ((int)buffer[2] << 8) |
@@ -53,7 +47,7 @@ Pixel **load_avs(const char *filename) {
     // read the follwing 4 bytes -> height
     fread(buffer, 1, 4, file);
 
-    // arrange big ndian bytes to little endian
+    // arrange header big endian bytes to little endian
     height = ((int)buffer[0] << 24) |
             ((int)buffer[1] << 16) |
             ((int)buffer[2] << 8) |
@@ -62,8 +56,7 @@ Pixel **load_avs(const char *filename) {
     // this initializeas a malloc of x height of the image, with the size of the pixel
     Pixel **image = malloc(height *sizeof(Pixel *));
 
-
-    // @TODO: check for errors that might occur
+    // @TODO: check for errors that might occur with malloc
 
     for (int y=0; y < height; y++) {
         // for every y in height, create row
@@ -82,7 +75,6 @@ Pixel **load_avs(const char *filename) {
             image[y][x].b = pixel[3];
         }
     }
-
 
     fclose(file);
     return image;
