@@ -1,0 +1,160 @@
+%==================================================================================
+\section{Load Matrix with .avs}
+
+
+
+\section{Save .avs from memory}
+
+The function \texttt{save\_avs} stores an image represented in memory as an AVS
+file. Its declaration is:
+
+\begin{lstlisting}
+int save_avs(const char *filename, Pixel **image,
+             int image_width, int image_height)
+\end{lstlisting}
+
+The function receives the output filename, a matrix of pixels, the image width,
+and the image height. It returns \texttt{0} if the operation is successful and
+\texttt{-1} if an error occurs.
+
+\subsection{Opening the output file}
+
+The file is opened in binary write mode:
+
+\begin{lstlisting}
+FILE *file = fopen(filename, "wb");
+\end{lstlisting}
+
+The \texttt{w} flag enables writing, while the \texttt{b} flag indicates that
+the file must be treated as binary data. If the file cannot be created, the
+function reports the error and returns \texttt{-1}.
+
+\begin{lstlisting}
+if (file == NULL) {
+    printf("Could not create file.\n");
+    return -1;
+}
+\end{lstlisting}
+
+\subsection{Writing the image width}
+
+The AVS format stores the width in the first four bytes of the file. These bytes
+must be written in big-endian order. The bit-shift operators extract each byte
+from the integer:
+
+\begin{lstlisting}
+buffer[0] = (unsigned char)((image_width >> 24) & 0xff);
+buffer[1] = (unsigned char)((image_width >> 16) & 0xff);
+buffer[2] = (unsigned char)((image_width >> 8) & 0xff);
+buffer[3] = (unsigned char)(image_width & 0xff);
+\end{lstlisting}
+
+The four bytes are then written to the file using \texttt{fwrite}:
+
+\begin{lstlisting}
+if (fwrite(buffer, 1, 4, file) != 4) {
+    fclose(file);
+    return -1;
+}
+\end{lstlisting}
+
+The return value of \texttt{fwrite} is checked to ensure that all four bytes
+were written successfully.
+
+\subsection{Writing the image height}
+
+The height is written using the same big-endian conversion:
+
+\begin{lstlisting}
+buffer[0] = (unsigned char)((image_height >> 24) & 0xff);
+buffer[1] = (unsigned char)((image_height >> 16) & 0xff);
+buffer[2] = (unsigned char)((image_height >> 8) & 0xff);
+buffer[3] = (unsigned char)(image_height & 0xff);
+\end{lstlisting}
+
+The resulting four bytes are written immediately after the width.
+The first eight bytes of the AVS file contain the image dimensions:
+
+\begin{verbatim}
+4 bytes for the width
+4 bytes for the height
+\end{verbatim}
+
+\subsection{Writing the pixel data}
+
+After writing the header, the function iterates through every row and column of
+the image:
+
+\begin{lstlisting}
+for (int y = 0; y < image_height; y++) {
+    for (int x = 0; x < image_width; x++) {
+\end{lstlisting}
+
+Each pixel is stored in the order alpha, red, green, and blue:
+
+\begin{lstlisting}
+buffer[0] = image[y][x].a;
+buffer[1] = image[y][x].r;
+buffer[2] = image[y][x].g;
+buffer[3] = image[y][x].b;
+\end{lstlisting}
+
+Each pixel occupies four bytes in the output file. The function writes those
+bytes and verifies that the operation succeeds:
+
+\begin{lstlisting}
+if (fwrite(buffer, 1, 4, file) != 4) {
+    fclose(file);
+    return -1;
+}
+\end{lstlisting}
+
+Pixels are written from left to right and from the top row to the bottom row.
+
+\subsection{Closing the file}
+
+Once the header and all pixel data have been written, the file is closed:
+
+\begin{lstlisting}
+if (fclose(file) != 0) {
+    return -1;
+}
+\end{lstlisting}
+
+If the file is closed successfully, the function returns zero:
+
+\begin{lstlisting}
+return 0;
+\end{lstlisting}
+
+\subsection{Using the function in \texttt{main}}
+
+The image is first loaded into memory using \texttt{load\_avs}:
+
+\begin{lstlisting}
+Pixel **image = load_avs("image.avs");
+\end{lstlisting}
+
+The in-memory image is then saved as a new AVS file:
+
+\begin{lstlisting}
+if (save_avs("image_copy.avs", image, width, height) == 0) {
+    printf("Image saved successfully.\n");
+} else {
+    printf("Could not save image.\n");
+}
+\end{lstlisting}
+
+This creates \texttt{image\_copy.avs} with the same dimensions and pixel values
+as the original image.
+
+Finally, the memory allocated for the pixel matrix is released row by row:
+
+\begin{lstlisting}
+for (int y = 0; y < height; y++) {
+    free(image[y]);
+}
+free(image);
+\end{lstlisting}
+
+This prevents memory leaks after the image has been saved.
