@@ -66,7 +66,7 @@ void init_interface(int argc, char **argv)
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(1920, 1080);
-    glutCreateWindow("My OpenGL Application");
+    glutCreateWindow("Costa Rica Map");
 
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special_keyboard);

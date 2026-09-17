@@ -1,5 +1,6 @@
 #include "utils/utils.h"
 #include "utils/mesa.h"
+#include "utils/interface.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +15,11 @@ int resolution;
 
 
 // ===== FUNCTIONS ======
-void draw_scene(void);
+void draw_scene(void) {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glFlush();
+};
 
 
 int main(int argc, char **argv)
