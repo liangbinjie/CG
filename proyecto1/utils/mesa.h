@@ -12,3 +12,8 @@ typedef struct {
   int x0, y0;
   int x1, y1;
 } LINE_POINT;
+
+typedef struct {
+  double x;
+  double y;
+} COORDINATES;
