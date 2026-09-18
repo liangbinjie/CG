@@ -67,4 +67,4 @@ void init_interface(int argc, char **argv) {
 
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special_keyboard);
-}
+};

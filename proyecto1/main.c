@@ -1,6 +1,7 @@
 #include "utils/utils.h"
 #include "utils/mesa.h"
 #include "utils/interface.h"
+#include "utils/coordinates.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +22,16 @@ int main(int argc, char **argv)
 
     glutDisplayFunc(draw_scene);
 
+    for (int i=0; i < province_count; i++) {
+        PROVINCE province = provinces[i];
+
+        printf("%s\n", province.name);
+
+    }
+
     glutMainLoop();
+
+
 
     return 0;
 }

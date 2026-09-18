@@ -6,5 +6,9 @@
 / This goes from drawing polygons to filling polygons
 */
 
+void load_polygon() {
+    
+}
+
 
 #endif

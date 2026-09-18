@@ -1,4 +1,4 @@
-#include "utils/mesa.h"
+#include "utils/coordinates.h"
 
 const COORDINATES Alajuela[] = {
     {-84.157729725915644, 10.788424656646614},
@@ -2107,7 +2107,7 @@ const COORDINATES Heredia[] = {
     {-84.199971272853901, 9.957221889875990},
 };
 
-const COORDINATES San_Jose[] = {
+const COORDINATES SanJose[] = {
     {-84.571059748147135, 9.824517030625202},
     {-84.563773369927233, 9.824723723857502},
     {-84.562145554131334, 9.826583962946529},
@@ -2670,3 +2670,43 @@ const COORDINATES Cartago[] = {
     {-83.942726000178894, 10.136229151484507},
 };
 
+
+const PROVINCE provinces[] = {
+    {
+        "Alajuela",
+        Alajuela,
+        sizeof(Alajuela) / sizeof(COORDINATES)
+    },
+    {
+        "Cartago",
+        Cartago,
+        sizeof(Cartago) / sizeof(COORDINATES)
+    },
+    {
+        "Heredia",
+        Heredia,
+        sizeof(Heredia) / sizeof(COORDINATES)
+    },
+    {
+        "Limon",
+        Limon,
+        sizeof(Limon) / sizeof(COORDINATES)
+    },
+    {
+        "SanJose",
+        SanJose,
+        sizeof(SanJose) / sizeof(COORDINATES)
+    },
+    {
+        "Guanacaste",
+        Guanacaste,
+        sizeof(Guanacaste) / sizeof(COORDINATES)
+    },
+    {
+        "Puntarenas",
+        Puntarenas,
+        sizeof(Puntarenas) / sizeof(COORDINATES)
+    }
+};
+
+const int province_count = sizeof(provinces) / sizeof(PROVINCE); // how many provinces there are
