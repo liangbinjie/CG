@@ -18,7 +18,7 @@ map.o: map.c utils/coordinates.h
 	$(CC) $(CFLAGS) -c map.c -o map.o
 
 
-utils/interface.o: interface.c utils/interface.h utils/coordinates.h
+utils/interface.o: utils/interface.c utils/interface.h utils/coordinates.h
 	$(CC) $(CFLAGS) -c utils/interface.c -o utils/interface.o
 
 
