@@ -62,9 +62,11 @@ void init_interface(int argc, char **argv) {
     glutInit(&argc, argv);
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutInitWindowSize(1920, 1080);
+    glutInitWindowSize(Hres, Vres);
     glutCreateWindow("Costa Rica Map");
 
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special_keyboard);
+    
+    gluOrtho2D(0, Hres, 0, Vres);
 };

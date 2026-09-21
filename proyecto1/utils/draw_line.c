@@ -1,4 +1,26 @@
 #include "draw_line.h"
+#include <GL/gl.h>
+#include <stdlib.h>
+
+void plot(int x, int y) {
+    glVertex2i(x, y);
+}
+
+void setColor(float r, float g, float b) {
+    glColor3f(r, g, b);
+}
+
+void swap(int *x0, int *y0, int *x1, int *y1) {
+    int temp;
+
+    temp = *x0;
+    *x0 = *x1;
+    *x1 = temp;
+
+    temp = *y0;
+    *y0 = *y1;
+    *y1 = temp;
+}
 
 void bressenhamH(int x0, int y0, int x1, int y1) {
     // always start from left to right
