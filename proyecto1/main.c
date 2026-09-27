@@ -23,7 +23,7 @@ void draw_map() {
     for (int i = 0; i < province_count; i++) {
         PROVINCE province = provinces[i];
 
-        for (int j = 0; j < province.size; j++) {
+        for (int j = 0; j < province.size - 1; j++) {
             COORDINATES p0 = province.coordinates[j];
             COORDINATES p1 = province.coordinates[j + 1];
 
