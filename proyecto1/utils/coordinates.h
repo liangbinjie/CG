@@ -2,35 +2,40 @@
 #define COORDINATES_H
 
 /*
-* This header file defines what it would be the structure of a coordinate and a province
-* a province have a name, a list of coordinates (defined in map.c)
-* and the size, which this means is the total amount of coordinates points it got that province
-*/
+ * Coordinate, polygon, and province structures.
+ *
+ * A province can contain one or more polygons. This is necessary for
+ * provinces such as Puntarenas, whose GeoJSON geometry contains multiple
+ * disconnected polygon rings (for example, islands and detached areas).
+ */
 
 typedef struct {
-  double x;
-  double y;
+    double x;
+    double y;
 } COORDINATES;
 
 typedef struct {
-  const char *name;
-  const COORDINATES *coordinates;
-  int size; // how many coordinates "points" it have
+    const COORDINATES *coordinates;
+    int size; // number of coordinate points in this polygon
+} POLYGON;
+
+typedef struct {
+    const char *name;
+    const POLYGON *polygons;
+    int polygon_count; // number of polygons in this province
 } PROVINCE;
 
-/* Individual provinces - List of coordinates of province */
+/* Polygon lists for each province */
+extern const POLYGON Alajuela[];
+extern const POLYGON Cartago[];
+extern const POLYGON Heredia[];
+extern const POLYGON Guanacaste[];
+extern const POLYGON Limon[];
+extern const POLYGON Puntarenas[];
+extern const POLYGON SanJose[];
 
-extern const COORDINATES Alajuela[];
-extern const COORDINATES SanJose[];
-extern const COORDINATES Heredia[];
-extern const COORDINATES Guanacaste[];
-extern const COORDINATES Limon[];
-extern const COORDINATES Puntarenas[];
-
-/* Province List */
-
+/* Province list */
 extern const PROVINCE provinces[];
 extern const int province_count;
-
 
 #endif

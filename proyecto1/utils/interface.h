@@ -1,14 +1,18 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#define Hres 1920
-#define Vres 1080
+#define Hres 750
+#define Vres 750
 
-#define Xmin -87.11766516876261
-#define Xmax -82.56283687636407
+#define INITIAL_XMIN -87.11766516876261
+#define INITIAL_XMAX -82.56283687636407
+#define INITIAL_YMIN 5.515082115173527
+#define INITIAL_YMAX 11.209937007468433
 
-#define Ymin 5.515082115173527
-#define Ymax 11.209937007468433
+extern double Xmin;
+extern double Xmax;
+extern double Ymin;
+extern double Ymax;
 
 void init_interface(int argc, char **argv);
 void keyboard(unsigned char key, int x, int y);
