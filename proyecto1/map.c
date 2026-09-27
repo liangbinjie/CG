@@ -1,6 +1,6 @@
 #include "utils/coordinates.h"
 
-const COORDINATES Alajuela[] = {
+const COORDINATES Alajuela_polygon0[] = {
     {-84.157729725915644, 10.788424656646614},
     {-84.157984175914407, 10.784251582247268},
     {-84.160516325205379, 10.571138024697504},
@@ -228,7 +228,7 @@ const COORDINATES Alajuela[] = {
     {-84.157729725915644, 10.788424656646614},
 };
 
-const COORDINATES Guanacaste[] = {
+const COORDINATES Guanacaste_polygon0[] = {
     {-85.236478241835300, 11.053096649322963},
     {-85.238848437182014, 11.051108727179063},
     {-85.246289839332164, 11.049403356157502},
@@ -672,7 +672,7 @@ const COORDINATES Guanacaste[] = {
     {-85.236478241835300, 11.053096649322963},
 };
 
-const COORDINATES Limon[] = {
+const COORDINATES Limon_polygon0[] = {
     {-83.763818116227682, 10.773683178557880},
     {-83.698142252693827, 10.789161677975210},
     {-83.663028115937351, 10.807015875047211},
@@ -993,7 +993,7 @@ const COORDINATES Limon[] = {
     {-83.763818116227682, 10.773683178557880},
 };
 
-const COORDINATES Puntarenas[] = {
+const COORDINATES Puntarenas_polygon0[] = {
     {-84.786627976553206, 10.315339656905135},
     {-84.764252081757746, 10.280096334852010},
     {-84.757844203768926, 10.272448225462545},
@@ -1788,6 +1788,9 @@ const COORDINATES Puntarenas[] = {
     {-84.806678433046457, 10.329809063819804},
     {-84.802260098243451, 10.327845363162664},
     {-84.786627976553206, 10.315339656905135},
+};
+
+const COORDINATES Puntarenas_polygon1[] = {
     {-85.229295457108762, 9.724822692054566},
     {-85.229184952084239, 9.724936553596821},
     {-85.226626958073112, 9.727571892508559},
@@ -1910,6 +1913,9 @@ const COORDINATES Puntarenas[] = {
     {-85.145782024219486, 9.612616193171586},
     {-85.229115356186185, 9.724391880836581},
     {-85.229295457108762, 9.724822692054566},
+};
+
+const COORDINATES Puntarenas_polygon2[] = {
     {-85.131337043156037, 10.098700264173203},
     {-85.121571417772799, 10.096380923837202},
     {-85.116037563893158, 10.091701563512986},
@@ -1931,6 +1937,9 @@ const COORDINATES Puntarenas[] = {
     {-85.145130988822345, 10.103461002529500},
     {-85.135650193900446, 10.098456120614772},
     {-85.131337043156037, 10.098700264173203},
+};
+
+const COORDINATES Puntarenas_polygon3[] = {
     {-87.099029101477186, 5.516017981747400},
     {-87.117665168762613, 5.515082115173527},
     {-87.104603645503019, 5.537420977302117},
@@ -1941,6 +1950,9 @@ const COORDINATES Puntarenas[] = {
     {-87.065541144645081, 5.534613340021647},
     {-87.078521288060330, 5.520656644359958},
     {-87.099029101477186, 5.516017981747400},
+};
+
+const COORDINATES Puntarenas_polygon4[] = {
     {-83.896617593188068, 8.706491866096639},
     {-83.883463745790465, 8.712992793691191},
     {-83.869114041902748, 8.713587337601913},
@@ -1950,7 +1962,7 @@ const COORDINATES Puntarenas[] = {
     {-83.896617593188068, 8.706491866096639},
 };
 
-const COORDINATES Heredia[] = {
+const COORDINATES Heredia_polygon0[] = {
     {-84.199971272853901, 9.957221889875990},
     {-84.201754114327414, 9.966006952142196},
     {-84.201857465382730, 9.971381275990730},
@@ -2107,7 +2119,7 @@ const COORDINATES Heredia[] = {
     {-84.199971272853901, 9.957221889875990},
 };
 
-const COORDINATES SanJose[] = {
+const COORDINATES SanJose_polygon0[] = {
     {-84.571059748147135, 9.824517030625202},
     {-84.563773369927233, 9.824723723857502},
     {-84.562145554131334, 9.826583962946529},
@@ -2517,7 +2529,7 @@ const COORDINATES SanJose[] = {
     {-84.571059748147135, 9.824517030625202},
 };
 
-const COORDINATES Cartago[] = {
+const COORDINATES Cartago_polygon0[] = {
     {-83.942726000178894, 10.136229151484507},
     {-83.817462328651999, 10.080418610384022},
     {-83.773563198627812, 10.059954737220712},
@@ -2670,43 +2682,107 @@ const COORDINATES Cartago[] = {
     {-83.942726000178894, 10.136229151484507},
 };
 
+const POLYGON Alajuela[] = {
+    {
+        Alajuela_polygon0,
+        sizeof(Alajuela_polygon0) / sizeof(COORDINATES)
+    },
+};
+
+const POLYGON Guanacaste[] = {
+    {
+        Guanacaste_polygon0,
+        sizeof(Guanacaste_polygon0) / sizeof(COORDINATES)
+    },
+};
+
+const POLYGON Limon[] = {
+    {
+        Limon_polygon0,
+        sizeof(Limon_polygon0) / sizeof(COORDINATES)
+    },
+};
+
+const POLYGON Puntarenas[] = {
+    {
+        Puntarenas_polygon0,
+        sizeof(Puntarenas_polygon0) / sizeof(COORDINATES)
+    },
+    {
+        Puntarenas_polygon1,
+        sizeof(Puntarenas_polygon1) / sizeof(COORDINATES)
+    },
+    {
+        Puntarenas_polygon2,
+        sizeof(Puntarenas_polygon2) / sizeof(COORDINATES)
+    },
+    {
+        Puntarenas_polygon3,
+        sizeof(Puntarenas_polygon3) / sizeof(COORDINATES)
+    },
+    {
+        Puntarenas_polygon4,
+        sizeof(Puntarenas_polygon4) / sizeof(COORDINATES)
+    },
+};
+
+const POLYGON Heredia[] = {
+    {
+        Heredia_polygon0,
+        sizeof(Heredia_polygon0) / sizeof(COORDINATES)
+    },
+};
+
+const POLYGON SanJose[] = {
+    {
+        SanJose_polygon0,
+        sizeof(SanJose_polygon0) / sizeof(COORDINATES)
+    },
+};
+
+const POLYGON Cartago[] = {
+    {
+        Cartago_polygon0,
+        sizeof(Cartago_polygon0) / sizeof(COORDINATES)
+    },
+};
 
 const PROVINCE provinces[] = {
     {
         "Alajuela",
         Alajuela,
-        sizeof(Alajuela) / sizeof(COORDINATES)
+        sizeof(Alajuela) / sizeof(POLYGON)
     },
     {
         "Cartago",
         Cartago,
-        sizeof(Cartago) / sizeof(COORDINATES)
+        sizeof(Cartago) / sizeof(POLYGON)
     },
     {
         "Heredia",
         Heredia,
-        sizeof(Heredia) / sizeof(COORDINATES)
+        sizeof(Heredia) / sizeof(POLYGON)
     },
     {
         "Limon",
         Limon,
-        sizeof(Limon) / sizeof(COORDINATES)
+        sizeof(Limon) / sizeof(POLYGON)
     },
     {
         "SanJose",
         SanJose,
-        sizeof(SanJose) / sizeof(COORDINATES)
+        sizeof(SanJose) / sizeof(POLYGON)
     },
     {
         "Guanacaste",
         Guanacaste,
-        sizeof(Guanacaste) / sizeof(COORDINATES)
+        sizeof(Guanacaste) / sizeof(POLYGON)
     },
     {
         "Puntarenas",
         Puntarenas,
-        sizeof(Puntarenas) / sizeof(COORDINATES)
+        sizeof(Puntarenas) / sizeof(POLYGON)
     }
 };
 
-const int province_count = sizeof(provinces) / sizeof(PROVINCE); // how many provinces there are
+const int province_count = sizeof(provinces) / sizeof(PROVINCE);

@@ -23,17 +23,25 @@ void draw_map() {
     for (int i = 0; i < province_count; i++) {
         PROVINCE province = provinces[i];
 
-        for (int j = 0; j < province.size - 1; j++) {
-            COORDINATES p0 = province.coordinates[j];
-            COORDINATES p1 = province.coordinates[j + 1];
+        for (int j = 0; j < province.polygon_count; j++) {
+            POLYGON polygon = province.polygons[j];
+            
+            for (int k = 0; k < polygon.size - 1; k++) {
+                COORDINATES p0 = polygon.coordinates[k];
+                COORDINATES p1 = polygon.coordinates[k + 1];
+            
+                // Apply rotation in universal coordinates
+                p0 = rotate_point(p0);
+                p1 = rotate_point(p1);
+            
+                int x0 = mapX_toBuffer(p0.x);
+                int y0 = mapY_toBuffer(p0.y);
 
-            int x0 = mapX_toBuffer(p0.x);
-            int y0 = mapY_toBuffer(p0.y);
+                int x1 = mapX_toBuffer(p1.x);
+                int y1 = mapY_toBuffer(p1.y);
 
-            int x1 = mapX_toBuffer(p1.x);
-            int y1 = mapY_toBuffer(p1.y);
-
-            draw_line(x0, y0, x1, y1);
+                draw_line(x0, y0, x1, y1);
+            }
         }
     }
     glEnd();
