@@ -1,14 +1,10 @@
 #ifndef POLYGONS_H
 #define POLYGONS_H
 
-/*
-/ This file contains the definitions of the functions used to draw polygons
-/ This goes from drawing polygons to filling polygons
-*/
+#include "coordinates.h"
 
-void load_polygon() {
-    
-}
+void draw_map(void);
+void fill_polygon(const POLYGON *polygon);
 
 
 #endif

@@ -3,14 +3,14 @@ CFLAGS = -I/usr/local/Mesa-3.4/include
 LDLIBS = -lX11 -lglut -lGLU -lGL -lm -lXext -lXmu
 LDFLAGS = -L/usr/local/Mesa-3.4/lib -L/usr/X11R6/lib
 
-OBJECTS = main.o map.o utils/interface.o utils/draw_line.o utils/pane.o utils/zoom.o utils/rotate.o
+OBJECTS = main.o map.o utils/interface.o utils/draw_line.o utils/polygons.o utils/pane.o utils/zoom.o utils/rotate.o
 OUTPUT = main
 
 $(OUTPUT): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT) $(OBJECTS) $(LDLIBS)
 
 
-main.o: main.c utils/mesa.h utils/utils.h utils/interface.h utils/coordinates.h
+main.o: main.c utils/mesa.h utils/utils.h utils/polygons.h utils/interface.h utils/coordinates.h
 	$(CC) $(CFLAGS) -c main.c -o main.o
 
 
@@ -23,6 +23,9 @@ utils/interface.o: utils/interface.c utils/interface.h utils/coordinates.h
 
 utils/draw_line.o: utils/draw_line.c utils/draw_line.h
 	$(CC) $(CFLAGS) -c utils/draw_line.c -o utils/draw_line.o
+
+utils/polygons.o: utils/polygons.c utils/polygons.h utils/color.h utils/coordinates.h utils/interface.h utils/mesa.h utils/rotate.h utils/draw_line.h
+	$(CC) $(CFLAGS) -c utils/polygons.c -o utils/polygons.o
 
 utils/pane.o: utils/pane.c utils/pane.h
 	$(CC) $(CFLAGS) -c utils/pane.c -o utils/pane.o

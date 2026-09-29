@@ -13,6 +13,7 @@ extern double Xmin;
 extern double Xmax;
 extern double Ymin;
 extern double Ymax;
+extern int fill_enabled;
 
 void init_interface(int argc, char **argv);
 void keyboard(unsigned char key, int x, int y);

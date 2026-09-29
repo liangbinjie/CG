@@ -10,6 +10,7 @@ double Xmin = INITIAL_XMIN;
 double Xmax = INITIAL_XMAX;
 double Ymin = INITIAL_YMIN;
 double Ymax = INITIAL_YMAX;
+int fill_enabled = 0;
 
 void reset() {
     angle = 0.0;
@@ -41,6 +42,12 @@ void keyboard(unsigned char key, int x, int y) {
         case 45:  // Zoom -
             printf("- Zoom\n");
             zoom(1.1);
+            glutPostRedisplay();
+            break;
+
+        case 'c':
+        case 'C':
+            fill_enabled = !fill_enabled;
             glutPostRedisplay();
             break;
 
