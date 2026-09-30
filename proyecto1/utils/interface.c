@@ -72,25 +72,25 @@ void special_keyboard(int key, int x, int y) {
     {
         case GLUT_KEY_UP:  // Pan Up
             printf("UP pressed\n");
-            pan_up(1);
+            pan_up(0.05);
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_DOWN:  // Pan Down
             printf("DOWN pressed\n");
-            pan_down(1);
+            pan_down(0.05);
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_LEFT:  // Pan Left
             printf("LEFT pressed\n");
-            pan_left(1);
+            pan_left(0.05);
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_RIGHT:  // Pan Right
             printf("RIGHT pressed\n");
-            pan_right(1);
+            pan_right(0.05);
             glutPostRedisplay();
             break;
     }
