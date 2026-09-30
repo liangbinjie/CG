@@ -20,10 +20,7 @@ static int mapY_toBuffer(double Yw) {
 static COLOR province_color(const char *name, int polygon_index) {
     if (strcmp(name, "Alajuela") == 0) return (COLOR){1.0, 0.0, 0.0};
     if (strcmp(name, "Heredia") == 0) return (COLOR){1.0, 1.0, 0.0};
-    if (strcmp(name, "Puntarenas") == 0) {
-        if (polygon_index >= 3) return (COLOR){0.4, 0.8, 1.0};
-        return (COLOR){1.0, 0.5, 0.0};
-    }
+    if (strcmp(name, "Puntarenas") == 0) return (COLOR){1.0, 0.5, 0.0};
     if (strcmp(name, "Limon") == 0) return (COLOR){0.0, 0.7, 0.0};
     if (strcmp(name, "Cartago") == 0) return (COLOR){0.0, 0.3, 1.0};
     if (strcmp(name, "Guanacaste") == 0) return (COLOR){0.45, 0.2, 0.05};
