@@ -5,6 +5,6 @@
 
 void draw_map(void);
 void fill_polygon(const POLYGON *polygon);
-
+void fill_textured_polygon(const POLYGON *polygon);
 
 #endif

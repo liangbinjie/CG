@@ -11,7 +11,7 @@ double Xmax = INITIAL_XMAX;
 double Ymin = INITIAL_YMIN;
 double Ymax = INITIAL_YMAX;
 int fill_enabled = 0;
-
+int texture_enabled = 0;
 void reset() {
     angle = 0.0;
     Xmin = INITIAL_XMIN;
@@ -48,6 +48,14 @@ void keyboard(unsigned char key, int x, int y) {
         case 'c':
         case 'C':
             fill_enabled = !fill_enabled;
+            texture_enabled = 0;
+            glutPostRedisplay();
+            break;
+        
+        case 't':
+        case 'T':
+            texture_enabled = !texture_enabled;
+            fill_enabled = 0;
             glutPostRedisplay();
             break;
 

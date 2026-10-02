@@ -1,16 +1,9 @@
 #include "texture.h"
-#include <GL/gl.h>
-#include <stdlib.h>
 
-typedef struct {
-    uint8_t a;
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-} TEXEL;
+// TEXTURE[x%TH][y%TV] = TEXEL
 
 // Load .avs file into a matrix
-// InputL: filename, width, height
+// Input: filename
 // Output: returns a texel struct matrix
 TEXEL **load_avs(const char *filename) {
     int height, width;
