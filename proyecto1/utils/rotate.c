@@ -1,5 +1,6 @@
 #include "rotate.h"
 #include "interface.h"
+#include <stdio.h>
 #include <math.h>
 
 #define PI 3.14159265358979323846
@@ -34,4 +35,18 @@ void rotate_clockwise(double a) {
 
 void rotate_counterclockwise(double a) {
     angle += a;
+}
+
+double get_rotate_value() {
+    int mode = get_mode();
+    
+    if(mode == 1){
+        printf("CTRL\n");
+        return ROTATE_SLOW;
+    }
+    if(mode == 2) {
+        printf("SHIFT\n");
+        return ROTATE_FAST;
+    }
+    return ROTATE_NORMAL;
 }
