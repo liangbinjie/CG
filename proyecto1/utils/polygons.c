@@ -23,20 +23,39 @@ static int mapTexelY_toPolygon(double Yw, int texture_height) {
     return (int)(texture_height * ((Yw - Ymin) / (Ymax - Ymin)));
 }
 
-TEXEL **texture = NULL;
+// WIDTH [4] HEIGHT [4] PIXEL [4] -> 4 bytes per pixel
+TEXTURE *avs_file;
+int texture_width;
+int texture_height;
+TEXEL **texture;
 
-void load_province_texture(const char *province_name) {
-    if (texture != NULL) {
-        for (int y = 0; y < texture_height; y++) {
-            free(texture[y]);
-        }
-        free(texture);
+// Load the texture for a specific province given its name
+// Textures are stored in the "textures" folder with the format "ProvinceName.avs"
+void load_province_texture(const char *ProvinceName) {
+    if (avs_file != NULL) {
+        free_texture(avs_file);
+        avs_file = NULL;
         texture = NULL;
     }
 
+    texture_width = 0;
+    texture_height = 0;
+
     char filename[256];
-    snprintf(filename, sizeof(filename), "textures/%s.avs", province_name);
-    texture = load_avs(filename);
+    strcpy(filename, "textures/");
+    strcat(filename, ProvinceName);
+    strcat(filename, ".avs");
+
+    avs_file = load_avs(filename);
+
+    if (avs_file == NULL) {
+        printf("Failed to load texture: %s\n", filename);
+        return;
+    }
+
+    texture_width = avs_file->width;
+    texture_height = avs_file->height;
+    texture = avs_file->pixels;
 }
 
 
@@ -220,7 +239,7 @@ void draw_map(void) {
         PROVINCE province = provinces[i];
 
         // Load the texture for the current province
-        texture = load_province_texture(province.name);
+        load_province_texture(province.name);
         for (int j = 0; j < province.polygon_count; j++) {
             POLYGON polygon = province.polygons[j];
 

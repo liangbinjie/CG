@@ -1,11 +1,13 @@
 #include "texture.h"
 
+#include <stdlib.h>
+
 // TEXTURE[x%TH][y%TV] = TEXEL
 
 // Load .avs file into a matrix
 // Input: filename
 // Output: returns a texel struct matrix
-TEXEL **load_avs(const char *filename) {
+TEXTURE *load_avs(const char *filename) {
     int height, width;
     FILE *file = fopen(filename, "rb"); // read file as binaries
 
@@ -36,28 +38,67 @@ TEXEL **load_avs(const char *filename) {
             buffer[3];
 
     // this initializeas a malloc of x height of the image, with the size of the pixel
-    TEXEL **image = malloc(height *sizeof(TEXEL *));
+    TEXTURE *texture = malloc(sizeof(TEXTURE));
 
-    // @TODO: check for errors that might occur with malloc
-
-    for (int y=0; y < height; y++) {
-        // for every y in height, create row
-        image[y] = malloc(width * sizeof(TEXEL));
+     if (texture == NULL) {
+        fclose(file);
+        return NULL;
     }
 
-    // fill the malloc with the image pixels data
-    for (int y=0; y < height; y++) {
-        for (int x=0; x < width; x++) {
+    // asign the width and height to the texture struct
+    texture->width = width;
+    texture->height = height;
+
+    // Allocate rows
+    texture->pixels = malloc(height * sizeof(TEXEL *));
+
+    if (texture->pixels == NULL) {
+        free(texture);
+        fclose(file);
+        return NULL;
+    }
+
+    // Allocate each row
+    for (int y = 0; y < height; y++) {
+        texture->pixels[y] = malloc(width * sizeof(TEXEL));
+
+        if (texture->pixels[y] == NULL) {
+            // Free previously allocated rows
+            for (int i = 0; i < y; i++) {
+                free(texture->pixels[i]);
+            }
+
+            free(texture->pixels);
+            free(texture);
+            fclose(file);
+
+            return NULL;
+        }
+    }
+
+    // Read pixels
+    for (int y = height-1; y >= 0; y--) {
+        for (int x = 0; x < width; x++) {
+
             unsigned char pixel[4];
+
             fread(pixel, 1, 4, file);
 
-            image[y][x].a = pixel[0];
-            image[y][x].r = pixel[1];
-            image[y][x].g = pixel[2];
-            image[y][x].b = pixel[3];
+            texture->pixels[y][x].a = pixel[0];
+            texture->pixels[y][x].r = pixel[1];
+            texture->pixels[y][x].g = pixel[2];
+            texture->pixels[y][x].b = pixel[3];
         }
     }
 
     fclose(file);
-    return image;
+
+    return texture;
+}
+
+void free_texture(TEXTURE *texture) {
+    if (texture == NULL)
+        return;
+    // Free the TEXTURE struct
+    free(texture);
 }
