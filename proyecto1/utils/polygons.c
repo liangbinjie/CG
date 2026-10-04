@@ -4,10 +4,13 @@
 #include "interface.h"
 #include "mesa.h"
 #include "rotate.h"
+#include "clipping.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
 
 static int mapX_toBuffer(double Xw) {
     return (int)(Hres * ((Xw - Xmin) / (Xmax - Xmin)));
@@ -103,9 +106,11 @@ static void draw_polygon_outline(const POLYGON *polygon) {
     for (int i = 0; i < polygon->size - 1; i++) {
         COORDINATES p0 = rotate_point(polygon->coordinates[i]);
         COORDINATES p1 = rotate_point(polygon->coordinates[i + 1]);
-
-        draw_line(mapX_toBuffer(p0.x), mapY_toBuffer(p0.y),
-                  mapX_toBuffer(p1.x), mapY_toBuffer(p1.y));
+        int visible = cohen_sutherland(&p0, &p1);
+        if (visible) {
+            draw_line(mapX_toBuffer(p0.x), mapY_toBuffer(p0.y),
+                      mapX_toBuffer(p1.x), mapY_toBuffer(p1.y));
+        }
     }
     glEnd();
 }
