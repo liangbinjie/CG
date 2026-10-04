@@ -9,7 +9,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static int mapX_toBuffer(double Xw) {
