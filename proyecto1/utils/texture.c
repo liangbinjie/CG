@@ -99,6 +99,15 @@ TEXTURE *load_avs(const char *filename) {
 void free_texture(TEXTURE *texture) {
     if (texture == NULL)
         return;
-    // Free the TEXTURE struct
+
+    // Free every row of the pixels
+    for (int y = 0; y < texture->height; y++) {
+        free(texture->pixels[y]);
+    }
+
+    // Free the collection with pointers
+    free(texture->pixels);
+
+    // Free the struct texture
     free(texture);
 }
