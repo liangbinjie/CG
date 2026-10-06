@@ -3,6 +3,8 @@
 
 #include "coordinates.h"
 
+#define PI 3.14159265358979323846
+
 #define ROTATE_NORMAL  5.0
 #define ROTATE_SLOW    1.0
 #define ROTATE_FAST    15.0
