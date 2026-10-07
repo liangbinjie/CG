@@ -1,5 +1,6 @@
 #include "interface.h"
 #include "clipping.h"
+#include <stdlib.h>
 
 int get_code(double x, double y) {
     int code = IN;
@@ -70,4 +71,106 @@ int cohen_sutherland(COORDINATES *p0, COORDINATES *p1) {
             code1 = get_code(p1->x, p1->y);
         }
     }
+}
+
+static int inside_boundary(COORDINATES point, int boundary) {
+    switch (boundary) {
+        case LEFT:
+            return point.x >= Xmin;
+        case RIGHT:
+            return point.x <= Xmax;
+        case BOTTOM:
+            return point.y >= Ymin;
+        case TOP:
+            return point.y <= Ymax;
+    }
+
+    return 0;
+}
+
+static COORDINATES boundary_intersection(COORDINATES start,
+                                          COORDINATES end,
+                                          int boundary) {
+    COORDINATES intersection = start;
+    double t;
+
+    if (boundary == LEFT || boundary == RIGHT) {
+        double boundary_x = boundary == LEFT ? Xmin : Xmax;
+        t = (boundary_x - start.x) / (end.x - start.x);
+        intersection.x = boundary_x;
+        intersection.y = start.y + t * (end.y - start.y);
+    } else {
+        double boundary_y = boundary == BOTTOM ? Ymin : Ymax;
+        t = (boundary_y - start.y) / (end.y - start.y);
+        intersection.x = start.x + t * (end.x - start.x);
+        intersection.y = boundary_y;
+    }
+
+    return intersection;
+}
+
+int clip_polygon(const COORDINATES *input, int input_count,
+                COORDINATES *output, int output_capacity) {
+    if (input == NULL || output == NULL || input_count < 3 ||
+        output_capacity < 3) {
+        return 0;
+    }
+
+    COORDINATES *working = malloc((size_t)output_capacity * sizeof(*working));
+    COORDINATES *next = malloc((size_t)output_capacity * sizeof(*next));
+    if (working == NULL || next == NULL) {
+        free(working);
+        free(next);
+        return 0;
+    }
+
+    int working_count = input_count < output_capacity
+        ? input_count
+        : output_capacity;
+    for (int i = 0; i < working_count; i++) {
+        working[i] = input[i];
+    }
+
+    for (int boundary = LEFT; boundary <= TOP; boundary <<= 1) {
+        int next_count = 0;
+
+        if (working_count == 0) break;
+
+        COORDINATES previous = working[working_count - 1];
+        int previous_inside = inside_boundary(previous, boundary);
+
+        for (int i = 0; i < working_count; i++) {
+            COORDINATES current = working[i];
+            int current_inside = inside_boundary(current, boundary);
+
+            if (current_inside != previous_inside &&
+                next_count < output_capacity) {
+                next[next_count++] = boundary_intersection(
+                    previous, current, boundary);
+            }
+
+            if (current_inside && next_count < output_capacity) {
+                next[next_count++] = current;
+            }
+
+            previous = current;
+            previous_inside = current_inside;
+        }
+
+        COORDINATES *temporary = working;
+        working = next;
+        next = temporary;
+        working_count = next_count;
+    }
+
+    int result_count = working_count < output_capacity
+        ? working_count
+        : output_capacity;
+    for (int i = 0; i < result_count; i++) {
+        output[i] = working[i];
+    }
+
+    free(working);
+    free(next);
+    return result_count;
 }

@@ -36,7 +36,10 @@ static int mapY_toBuffer(double Yw) {
 static COLOR province_color(const char *name, int polygon_index) {
     if (strcmp(name, "Alajuela") == 0) return (COLOR){1.0, 0.0, 0.0};
     if (strcmp(name, "Heredia") == 0) return (COLOR){1.0, 1.0, 0.0};
-    if (strcmp(name, "Puntarenas") == 0) return (COLOR){1.0, 0.5, 0.0};
+    if (strcmp(name, "Puntarenas") == 0) {
+        if (polygon_index >= 3) return (COLOR){0.4, 0.8, 1.0};
+        return (COLOR){1.0, 0.5, 0.0};
+    }
     if (strcmp(name, "Limon") == 0) return (COLOR){0.0, 0.7, 0.0};
     if (strcmp(name, "Cartago") == 0) return (COLOR){0.0, 0.3, 1.0};
     if (strcmp(name, "Guanacaste") == 0) return (COLOR){0.45, 0.2, 0.05};
@@ -128,7 +131,7 @@ void fill_textured_polygon(const POLYGON *polygon, TEXTURE *texture) {
 }
 
 void fill_polygon(const POLYGON *polygon) {
-    int point_count = polygon->size - 1;
+    int point_count = polygon->size;
     if (point_count < 3) return;
 
     int *x_points = malloc((size_t)point_count * sizeof(*x_points));
@@ -144,7 +147,7 @@ void fill_polygon(const POLYGON *polygon) {
     int minimum_y = Vres;
     int maximum_y = 0;
     for (int i = 0; i < point_count; i++) {
-        COORDINATES point = rotate_point(polygon->coordinates[i]);
+        COORDINATES point = polygon->coordinates[i];
         x_points[i] = mapX_toBuffer(point.x);
         y_points[i] = mapY_toBuffer(point.y);
         if (y_points[i] < minimum_y) minimum_y = y_points[i];
@@ -193,9 +196,12 @@ void fill_polygon(const POLYGON *polygon) {
 
 static void draw_polygon_outline(const POLYGON *polygon) {
     glBegin(GL_POINTS);
-    for (int i = 0; i < polygon->size - 1; i++) {
+    int point_count = polygon->size - 1;
+    for (int i = 0; i < point_count; i++) {
+        int next = (i + 1) % point_count;
         COORDINATES p0 = rotate_point(polygon->coordinates[i]);
-        COORDINATES p1 = rotate_point(polygon->coordinates[i + 1]);
+        COORDINATES p1 = rotate_point(polygon->coordinates[next]);
+
         int visible = cohen_sutherland(&p0, &p1);
         if (visible) {
             draw_line(mapX_toBuffer(p0.x), mapY_toBuffer(p0.y),
@@ -215,11 +221,31 @@ void draw_map(void) {
             get_province_texture(province.name);
         for (int j = 0; j < province.polygon_count; j++) {
             POLYGON polygon = province.polygons[j];
+            int input_count = polygon.size - 1;
+            int output_capacity = input_count + 8;
+            COORDINATES *rotated = malloc(
+                (size_t)input_count * sizeof(*rotated));
+            COORDINATES *clipped = malloc(
+                (size_t)output_capacity * sizeof(*clipped));
 
-            if (fill_enabled) {
+            if (rotated == NULL || clipped == NULL) {
+                free(rotated);
+                free(clipped);
+                continue;
+            }
+
+            for (int k = 0; k < input_count; k++) {
+                rotated[k] = rotate_point(polygon.coordinates[k]);
+            }
+
+            int clipped_count = clip_polygon(
+                rotated, input_count, clipped, output_capacity);
+            POLYGON visible_polygon = {clipped, clipped_count};
+
+            if (fill_enabled && clipped_count >= 3) {
                 COLOR color = province_color(province.name, j);
                 setColor(color.r, color.g, color.b);
-                fill_polygon(&polygon);
+                fill_polygon(&visible_polygon);
             }
 
             if (texture_enabled && province_texture != NULL) {
@@ -228,6 +254,9 @@ void draw_map(void) {
 
             setColor(1.0, 1.0, 1.0);
             draw_polygon_outline(&polygon);
+
+            free(rotated);
+            free(clipped);
         }
     }
 }

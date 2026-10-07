@@ -13,4 +13,7 @@
 int get_code(double x, double y);
 int cohen_sutherland(COORDINATES *p0, COORDINATES *p1);
 
+int clip_polygon(const COORDINATES *input, int input_count,
+				COORDINATES *output, int output_capacity);
+
 #endif
