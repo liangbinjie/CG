@@ -44,12 +44,6 @@ void keyboard(unsigned char key, int x, int y) {
             exit(0);
             break;
         
-        case 'c':
-        case 'C':
-            fill_enabled = !fill_enabled;
-            glutPostRedisplay();
-            break;
-        
         case 'r':  // Reiniciar
         case 'R':
             reset();
