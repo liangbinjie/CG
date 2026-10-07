@@ -3,7 +3,7 @@ CFLAGS = -I/usr/local/Mesa-3.4/include
 LDLIBS = -lX11 -lglut -lGLU -lGL -lm -lXext -lXmu
 LDFLAGS = -L/usr/local/Mesa-3.4/lib -L/usr/X11R6/lib
 
-OBJECTS = main.o map.o utils/interface.o utils/draw_line.o utils/polygons.o utils/pane.o utils/zoom.o utils/rotate.o utils/texture.o
+OBJECTS = main.o map.o utils/interface.o utils/draw_line.o utils/polygons.o utils/pane.o utils/zoom.o utils/rotate.o utils/clipping.o utils/texture.o
 OUTPUT = main
 
 $(OUTPUT): $(OBJECTS)
@@ -39,6 +39,9 @@ utils/rotate.o: utils/rotate.c utils/rotate.h
 utils/texture.o: utils/texture.c utils/texture.h
 	$(CC) $(CFLAGS) -c utils/texture.c -o utils/texture.o
 
+utils/clipping.o: utils/clipping.c utils/clipping.h
+	$(CC) $(CFLAGS) -c utils/clipping.c -o utils/clipping.o
+	
 clean:
 	rm -f *.o
 	rm -f utils/*.o

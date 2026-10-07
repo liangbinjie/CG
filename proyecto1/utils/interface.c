@@ -13,6 +13,22 @@ double Ymin = INITIAL_YMIN;
 double Ymax = INITIAL_YMAX;
 int fill_enabled = 0;
 int texture_enabled = 0;
+
+int get_mode() {
+    // Verifies if the shift or ctrl are being pressed
+    int mods = glutGetModifiers();
+
+    if (mods & GLUT_ACTIVE_SHIFT) {
+        return 2; // Fast mode
+    }
+
+    if (mods & GLUT_ACTIVE_CTRL) {
+        return 1; // Slow mode
+    }
+
+    return 0; // Normal mode
+}
+
 void reset() {
     angle = 0.0;
     Xmin = INITIAL_XMIN;
@@ -28,49 +44,61 @@ void keyboard(unsigned char key, int x, int y) {
             exit(0);
             break;
         
+        case 'c':
+        case 'C':
+            fill_enabled = !fill_enabled;
+            glutPostRedisplay();
+            break;
+        
         case 'r':  // Reiniciar
         case 'R':
             reset();
             glutPostRedisplay();
             break;
         
-        case 43:  // Zoom +
+        case 'i':  // Zoom +
+        case 'I':
+        case 9: // case for ctrl + i
             printf("+ Zoom\n");
-            zoom(0.9);
+            zoom(get_zoomIn_value());
             glutPostRedisplay();
             break;
         
-        case 45:  // Zoom -
+        case 'o':  // Zoom -
+        case 'O':
+        case 15: // case for ctrl + o
             printf("- Zoom\n");
-            zoom(1.1);
+            zoom(get_zoomOut_value());
             glutPostRedisplay();
             break;
 
         case 'c':
         case 'C':
-            fill_enabled = !fill_enabled;
             texture_enabled = 0;
+            fill_enabled = !fill_enabled;
             glutPostRedisplay();
             break;
         
         case 't':
         case 'T':
-            texture_enabled = !texture_enabled;
             fill_enabled = 0;
+            texture_enabled = !texture_enabled;
             glutPostRedisplay();
             break;
 
         case 'q':  // Rotate to left
         case 'Q':
+        case 17: // case for ctrl + q
             printf("Q pressed\n");
-            rotate_counterclockwise(5.0);
+            rotate_counterclockwise(get_rotate_value());
             glutPostRedisplay();
             break;
         
         case 'e':  // Rotate to right
         case 'E':
+        case 5: // case for ctrl + e
             printf("E pressed\n");
-            rotate_clockwise(5.0);
+            rotate_clockwise(get_rotate_value());
             glutPostRedisplay();
             break;
     }
@@ -81,25 +109,25 @@ void special_keyboard(int key, int x, int y) {
     {
         case GLUT_KEY_UP:  // Pan Up
             printf("UP pressed\n");
-            pan_up(0.05);
+            pan_up(get_pane_value());
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_DOWN:  // Pan Down
             printf("DOWN pressed\n");
-            pan_down(0.05);
+            pan_down(get_pane_value());
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_LEFT:  // Pan Left
             printf("LEFT pressed\n");
-            pan_left(0.05);
+            pan_left(get_pane_value());
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_RIGHT:  // Pan Right
             printf("RIGHT pressed\n");
-            pan_right(0.05);
+            pan_right(get_pane_value());
             glutPostRedisplay();
             break;
     }

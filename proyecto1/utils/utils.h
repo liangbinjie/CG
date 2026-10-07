@@ -7,5 +7,6 @@
 #include "pane.h"
 #include "rotate.h"
 #include "color.h"
+#include "clipping.h"
 
 #endif
