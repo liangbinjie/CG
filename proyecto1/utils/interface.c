@@ -5,12 +5,14 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "texture.h"
 
 double Xmin = INITIAL_XMIN;
 double Xmax = INITIAL_XMAX;
 double Ymin = INITIAL_YMIN;
 double Ymax = INITIAL_YMAX;
 int fill_enabled = 0;
+int texture_enabled = 0;
 
 int get_mode() {
     // Verifies if the shift or ctrl are being pressed
@@ -42,12 +44,6 @@ void keyboard(unsigned char key, int x, int y) {
             exit(0);
             break;
         
-        case 'c':
-        case 'C':
-            fill_enabled = !fill_enabled;
-            glutPostRedisplay();
-            break;
-        
         case 'r':  // Reiniciar
         case 'R':
             reset();
@@ -67,6 +63,20 @@ void keyboard(unsigned char key, int x, int y) {
         case 15: // case for ctrl + o
             printf("- Zoom\n");
             zoom(get_zoomOut_value());
+            glutPostRedisplay();
+            break;
+
+        case 'c':
+        case 'C':
+            texture_enabled = 0;
+            fill_enabled = !fill_enabled;
+            glutPostRedisplay();
+            break;
+        
+        case 't':
+        case 'T':
+            fill_enabled = 0;
+            texture_enabled = !texture_enabled;
             glutPostRedisplay();
             break;
 
@@ -119,6 +129,8 @@ void special_keyboard(int key, int x, int y) {
 
 void init_interface(int argc, char **argv) {
     glutInit(&argc, argv);
+
+    load_all_province_textures();
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(Hres, Vres);
