@@ -5,6 +5,7 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "texture.h"
 
 double Xmin = INITIAL_XMIN;
 double Xmax = INITIAL_XMAX;
@@ -106,6 +107,8 @@ void special_keyboard(int key, int x, int y) {
 
 void init_interface(int argc, char **argv) {
     glutInit(&argc, argv);
+
+    load_all_province_textures();
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(Hres, Vres);

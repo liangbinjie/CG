@@ -1,14 +1,13 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <stdint.h>
 #include <stdio.h>
 
 typedef struct {
-    uint8_t a;
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
+    unsigned char a;
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
 } TEXEL;
 
 typedef struct {
@@ -17,10 +16,11 @@ typedef struct {
     TEXEL **pixels;
 } TEXTURE;
 
-// use imagemagick to generate avi image
+TEXTURE *load_avs(const char *filename);
+TEXTURE *get_province_texture(const char *province_name);
+void free_all_province_textures(void);
+void load_all_province_textures(void);
+void free_texture(TEXTURE *texture);
 
-TEXTURE *load_avs(const char *filename); // load .avs image texture
-
-void free_texture(TEXTURE *texture); // free the allocated memory for the texture
 
 #endif

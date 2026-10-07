@@ -4,7 +4,6 @@
 #include "interface.h"
 #include "mesa.h"
 #include "rotate.h"
-#include "texture.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -22,42 +21,6 @@ static int mapTexelX_toPolygon(double Xw, int texture_width) {
 static int mapTexelY_toPolygon(double Yw, int texture_height) {
     return (int)(texture_height * ((Yw - Ymin) / (Ymax - Ymin)));
 }
-
-// WIDTH [4] HEIGHT [4] PIXEL [4] -> 4 bytes per pixel
-TEXTURE *avs_file;
-int texture_width;
-int texture_height;
-TEXEL **texture;
-
-// Load the texture for a specific province given its name
-// Textures are stored in the "textures" folder with the format "ProvinceName.avs"
-void load_province_texture(const char *ProvinceName) {
-    if (avs_file != NULL) {
-        free_texture(avs_file);
-        avs_file = NULL;
-        texture = NULL;
-    }
-
-    texture_width = 0;
-    texture_height = 0;
-
-    char filename[256];
-    strcpy(filename, "textures/");
-    strcat(filename, ProvinceName);
-    strcat(filename, ".avs");
-
-    avs_file = load_avs(filename);
-
-    if (avs_file == NULL) {
-        printf("Failed to load texture: %s\n", filename);
-        return;
-    }
-
-    texture_width = avs_file->width;
-    texture_height = avs_file->height;
-    texture = avs_file->pixels;
-}
-
 
 // =============================================================================
 
@@ -86,8 +49,14 @@ static int compare_intersections(const void *left, const void *right) {
     return (first > second) - (first < second);
 }
 
-void fill_textured_polygon(const POLYGON *polygon) {
+void fill_textured_polygon(const POLYGON *polygon, TEXTURE *texture) {
+    if (texture == NULL) return;
+
+    int texture_width = texture->width;
+    int texture_height = texture->height;
+
     int point_count = polygon->size - 1;
+
     if (point_count < 3 || texture == NULL) return;
 
     int *x_points = malloc((size_t)point_count * sizeof(*x_points));
@@ -144,7 +113,7 @@ void fill_textured_polygon(const POLYGON *polygon) {
                     double Yw = Ymin + (Ymax - Ymin) * y / Vres;
                     int texel_x = mapTexelX_toPolygon(Xw, texture_width);
                     int texel_y = mapTexelY_toPolygon(Yw, texture_height);
-                    TEXEL texel = texture[texel_y % texture_height][texel_x % texture_width];
+                    TEXEL texel = texture->pixels[texel_y % texture_height][texel_x % texture_width];
                     setColor(texel.r / 255.0, texel.g / 255.0, texel.b / 255.0);
                     glVertex2i(x, y);
                 }
@@ -239,7 +208,8 @@ void draw_map(void) {
         PROVINCE province = provinces[i];
 
         // Load the texture for the current province
-        load_province_texture(province.name);
+        TEXTURE *province_texture =
+            get_province_texture(province.name);
         for (int j = 0; j < province.polygon_count; j++) {
             POLYGON polygon = province.polygons[j];
 
@@ -249,8 +219,8 @@ void draw_map(void) {
                 fill_polygon(&polygon);
             }
 
-            if (texture_enabled && texture != NULL) {
-                fill_textured_polygon(&polygon);
+            if (texture_enabled && province_texture != NULL) {
+                fill_textured_polygon(&polygon, province_texture);
             }
 
             setColor(1.0, 1.0, 1.0);
