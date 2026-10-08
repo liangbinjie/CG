@@ -1,6 +1,5 @@
 #include "rotate.h"
 #include "interface.h"
-#include <stdio.h>
 #include <math.h>
 
 double angle = 0.0;
@@ -39,11 +38,9 @@ double get_rotate_value() {
     int mode = get_mode();
     
     if(mode == 1){
-        printf("CTRL\n");
         return ROTATE_SLOW;
     }
     if(mode == 2) {
-        printf("SHIFT\n");
         return ROTATE_FAST;
     }
     return ROTATE_NORMAL;

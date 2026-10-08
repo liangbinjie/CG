@@ -53,7 +53,6 @@ void keyboard(unsigned char key, int x, int y) {
         case 'i':  // Zoom +
         case 'I':
         case 9: // case for ctrl + i
-            printf("+ Zoom\n");
             zoom(get_zoomIn_value());
             glutPostRedisplay();
             break;
@@ -61,7 +60,6 @@ void keyboard(unsigned char key, int x, int y) {
         case 'o':  // Zoom -
         case 'O':
         case 15: // case for ctrl + o
-            printf("- Zoom\n");
             zoom(get_zoomOut_value());
             glutPostRedisplay();
             break;
@@ -83,7 +81,6 @@ void keyboard(unsigned char key, int x, int y) {
         case 'q':  // Rotate to left
         case 'Q':
         case 17: // case for ctrl + q
-            printf("Q pressed\n");
             rotate_counterclockwise(get_rotate_value());
             glutPostRedisplay();
             break;
@@ -91,7 +88,6 @@ void keyboard(unsigned char key, int x, int y) {
         case 'e':  // Rotate to right
         case 'E':
         case 5: // case for ctrl + e
-            printf("E pressed\n");
             rotate_clockwise(get_rotate_value());
             glutPostRedisplay();
             break;
@@ -102,25 +98,21 @@ void special_keyboard(int key, int x, int y) {
     switch (key)
     {
         case GLUT_KEY_UP:  // Pan Up
-            printf("UP pressed\n");
             pan_up(get_pane_value());
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_DOWN:  // Pan Down
-            printf("DOWN pressed\n");
             pan_down(get_pane_value());
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_LEFT:  // Pan Left
-            printf("LEFT pressed\n");
             pan_left(get_pane_value());
             glutPostRedisplay();
             break;
 
         case GLUT_KEY_RIGHT:  // Pan Right
-            printf("RIGHT pressed\n");
             pan_right(get_pane_value());
             glutPostRedisplay();
             break;

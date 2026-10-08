@@ -1,7 +1,6 @@
 #include "interface.h"
 #include "pane.h"
 #include "rotate.h"
-#include <stdio.h>
 #include <math.h>
 
 static void pan_screen(double deltaX, double deltaY) {
@@ -42,11 +41,9 @@ double get_pane_value() {
     int mode = get_mode();
     
     if(mode == 1){
-        printf("CTRL\n");
         return PANE_SLOW;
     }
     if(mode == 2) {
-        printf("SHIFT\n");
         return PANE_FAST;
     }
     return PANE_NORMAL;
