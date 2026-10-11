@@ -11,3 +11,4 @@
 *.run.xml
 .DS_Store
 *.o
+main
