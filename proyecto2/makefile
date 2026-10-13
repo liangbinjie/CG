@@ -10,7 +10,7 @@ $(OUTPUT): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT) $(OBJECTS) $(LDLIBS)
 
 
-main.o: main.c utils/mesa.h utils/utils.h utils/interface.h config/config.h
+main.o: main.c utils/utils.h utils/interface.h config/config.h
 	$(CC) $(CFLAGS) -c main.c -o main.o
 
 interface.o: utils/interface.c utils/interface.h
