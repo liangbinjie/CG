@@ -4,6 +4,8 @@
 #include <stdio.h>   // sscanf
 #include <stdlib.h>  // malloc, free
 #include <string.h>  // strncmp
+#include <float.h>
+#include <math.h>
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius) {
     // Example line format: "sphere x y z alpha red green blue radius"
@@ -67,3 +69,92 @@ int parse_object(const char *line, Object **objects) {
 
     return -1;
 }
+
+void free_objects(Object *objects) {
+    Object *current = objects;
+    Object *next;
+
+    while (current != NULL) {
+        next = current->next;
+
+        free(current->data);
+        free(current);
+
+        current = next;
+    }
+}
+
+Color de_que_color(Position eye, Position ray, Config config) {
+    Color color;
+    Intersection intersection;
+    
+    if (first_intersection(eye, ray, config, &intersection)) {
+        color = intersection.object->color;
+    } else {
+        color = config.background_color;
+    }
+    
+    return color;
+}
+
+int first_intersection(Position eye, Position ray, Config config, Intersection *intersection) {
+    double tmin = DBL_MAX;
+    double t;
+    int found = 0;
+
+    Object *current = config.objects;
+
+    while (current != NULL) {
+        if (current->type == SPHERE) {
+            if (intersect_sphere(eye, ray, current, &t)) {
+                if (t < tmin) {
+                    tmin = t;
+
+                    intersection->object = current;
+                    intersection->t = t;
+
+                    found = 1;
+                }
+            }
+        }
+        current = current->next;
+    }
+
+    return found;
+}
+
+int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
+    Sphere *sphere = (Sphere *)object->data;
+    double t1, t2;
+
+    double dx = eye.x - object->position.x;
+    double dy = eye.y - object->position.y;
+    double dz = eye.z - object->position.z;
+
+    double a = ray.x * ray.x + ray.y * ray.y + ray.z * ray.z;
+    double b = 2.0 * (ray.x * dx + ray.y * dy + ray.z * dz);
+    double c = dx * dx + dy * dy + dz * dz -
+               sphere->radius * sphere->radius;
+
+    double discriminant = b * b - 4.0 * a * c;
+
+    if (a == 0.0 || discriminant < 0.0) {
+        return 0;
+    }
+
+    t1 = (-b - sqrt(discriminant)) / (2.0 * a);
+    t2 = (-b + sqrt(discriminant)) / (2.0 * a);
+
+    if (t1 > 0.0) {
+        *t = t1;
+        return 1;
+    }
+
+    if (t2 > 0.0) {
+        *t = t2;
+        return 1;
+    }
+
+    return 0;
+}
+
