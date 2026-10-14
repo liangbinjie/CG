@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <stdint.h>
+
 #define CONFIG_FILE "config.cfg"
 
 typedef struct {
@@ -11,12 +13,27 @@ typedef struct {
 } Pixel;
 
 typedef struct {
+    int xmin;
+    int ymin;
+    int xmax;
+    int ymax;
+} Window;
+
+typedef struct {
+    double x;
+    double y;
+    double z;
+} Eye;
+
+typedef struct {
     int width;
     int height;
-    double eye_x;
-    double eye_y;
-    double eye_z;
+    Window window;
+    char output_name[100];
+    Eye eye;
     Pixel background_color;
+
+    // Linked List of Objects
 } Config;
 
 int load_config(Config *config);
