@@ -1,16 +1,13 @@
 CC = cc
-CFLAGS = -I/usr/local/Mesa-3.4/include
-LDLIBS = -lX11 -lglut -lGLU -lGL -lm -lXext -lXmu
-LDFLAGS = -L/usr/local/Mesa-3.4/lib -L/usr/X11R6/lib
 
-OBJECTS = main.o utils/interface.o config/config.o
+OBJECTS = main.o utils/interface.o config/config.o object/object.o
 OUTPUT = main
 
 $(OUTPUT): $(OBJECTS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT) $(OBJECTS) $(LDLIBS)
+	$(CC) -o $(OUTPUT) $(OBJECTS) $(LDLIBS)
 
 
-main.o: main.c utils/utils.h utils/interface.h config/config.h
+main.o: main.c utils/utils.h utils/interface.h config/config.h object/object.h
 	$(CC) $(CFLAGS) -c main.c -o main.o
 
 interface.o: utils/interface.c utils/interface.h
@@ -18,6 +15,9 @@ interface.o: utils/interface.c utils/interface.h
 
 config.o: config/config.c config/config.h
 	$(CC) $(CFLAGS) -c config/config.c -o config/config.o
+
+object.o: object/object.c object/object.h
+	$(CC) $(CFLAGS) -c object/object.c -o object/object.o
 
 clean:
 	rm -f *.o

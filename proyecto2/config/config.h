@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+typedef struct Object Object;
+
 #define CONFIG_FILE "config.cfg"
 
 typedef struct {
@@ -10,7 +12,7 @@ typedef struct {
     uint8_t r;
     uint8_t g;
     uint8_t b;
-} Pixel;
+} Color;
 
 typedef struct {
     int xmin;
@@ -31,10 +33,10 @@ typedef struct {
     Window window;
     char output_name[100];
     Position eye;
-    Pixel background_color;
+    Color background_color;
 
     // Linked List of Objects
-    // Object *objects;
+    Object *objects;
 } Config;
 
 int load_config(Config *config);
