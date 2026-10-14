@@ -23,17 +23,18 @@ typedef struct {
     double x;
     double y;
     double z;
-} Eye;
+} Position;
 
 typedef struct {
     int width;
     int height;
     Window window;
     char output_name[100];
-    Eye eye;
+    Position eye;
     Pixel background_color;
 
     // Linked List of Objects
+    // Object *objects;
 } Config;
 
 int load_config(Config *config);
