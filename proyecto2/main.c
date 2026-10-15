@@ -78,17 +78,32 @@ void load_objects(Config config) {
 int main(int argc, char **argv) {
     Config config;
     Color **framebuffer;
+    char avs_filename[sizeof(config.output_name) + 5];
 
     if (load_config(&config) != 0) {
         fprintf(stderr, "ERROR: Failed to load config file.\n");
         return 1;
     }
     
-    load_objects(config);
-    
     framebuffer = create_buffer(config);
     
     fill_buffer(framebuffer, config);
+
+    if (snprintf(avs_filename, sizeof(avs_filename), "%s.avs",
+                 config.output_name) < 0 ||
+        save_avs(avs_filename, framebuffer, config.width, config.height) != 0) {
+        fprintf(stderr, "ERROR: Failed to save AVS file.\n");
+        free_buffer(framebuffer, config);
+        free_objects(config.objects);
+        return 1;
+    }
+
+    if (display_avs(avs_filename) != 0) {
+        fprintf(stderr, "ERROR: Could not display AVS with ImageMagick.\n");
+        free_buffer(framebuffer, config);
+        free_objects(config.objects);
+        return 1;
+    }
     
     free_buffer(framebuffer, config);
     
