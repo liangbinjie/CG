@@ -7,12 +7,13 @@
 #include <float.h>
 #include <math.h>
 
-int parse_sphere(const char *line, Position *position, Color *color, double *radius) {
-    // Example line format: "sphere x y z alpha red green blue radius"
-    if (sscanf(line, "sphere %lf %lf %lf %hhu %hhu %hhu %hhu %lf",
+int parse_sphere(const char *line, Position *position, Color *color, double *radius,
+                 double *reflection_coefficient, double *ambient_coefficient) {
+    // Format: "sphere x y z alpha red green blue radius K_D K_A"
+    if (sscanf(line, "sphere %lf %lf %lf %hhu %hhu %hhu %hhu %lf %lf %lf",
                &position->x, &position->y, &position->z,
                &color->a, &color->r, &color->g, &color->b,
-               radius) != 8) {
+               radius, reflection_coefficient, ambient_coefficient) != 10) {
         return -1; 
     }
     color->a = 255; // Default alpha value
@@ -48,9 +49,12 @@ int parse_object(const char *line, Object **objects) {
     Position position;
     Color color;
     double radius;
+    double reflection_coefficient;
+    double ambient_coefficient;
 
     if (strncmp(line, "sphere", 6) == 0) {
-        if (parse_sphere(line, &position, &color, &radius) == 0) {
+        if (parse_sphere(line, &position, &color, &radius,
+                         &reflection_coefficient, &ambient_coefficient) == 0) {
             Sphere *sphere_data = (Sphere *)malloc(sizeof(Sphere));
             if (!sphere_data) {
                 return -1; // Memory allocation failed
@@ -62,6 +66,8 @@ int parse_object(const char *line, Object **objects) {
                 free(sphere_data);
                 return -1; // Memory allocation failed
             }
+            new_object->reflection_coefficient = reflection_coefficient;
+            new_object->ambient_coefficient = ambient_coefficient;
             *objects = add_object(*objects, new_object);
             return 0; 
         }
@@ -84,6 +90,68 @@ void free_objects(Object *objects) {
     }
 }
 
+Position vectorN_sphere(const Object *object, Position intersection_position) {
+    Position normal = {0.0, 0.0, 0.0};
+    if (!object || object->type != SPHERE || !object->data) return normal;
+
+    const Sphere *sphere = (const Sphere *)object->data;
+    if (sphere->radius == 0.0) return normal;
+
+    normal.x = (intersection_position.x - object->position.x) / sphere->radius;
+    normal.y = (intersection_position.y - object->position.y) / sphere->radius;
+    normal.z = (intersection_position.z - object->position.z) / sphere->radius;
+    return normal;
+}
+
+Position getVectorN(const Object *object, Position intersection_position) {
+    Position normal = {0.0, 0.0, 0.0};
+    if (!object) return normal;
+
+    switch (object->type) {
+        case SPHERE:
+            return vectorN_sphere(object, intersection_position);
+        default:
+            return normal;
+    }
+}
+
+Position get_vectorL(Position intersection_position, Position light_position) {
+    Position vector = {
+        light_position.x - intersection_position.x,
+        light_position.y - intersection_position.y,
+        light_position.z - intersection_position.z
+    };
+    double length = sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+
+    // The direction is undefined when the intersection and light positions coincide.
+    if (length == 0.0) return (Position){0.0, 0.0, 0.0};
+
+    vector.x /= length;
+    vector.y /= length;
+    vector.z /= length;
+    return vector;
+}
+
+double get_crossProduct(Position vectorN, Position vectorL) {
+    // For normalized N and L, the dot product is cos(theta)
+    double cosine = vectorN.x * vectorL.x +
+                    vectorN.y * vectorL.y +
+                    vectorN.z * vectorL.z;
+    return cosine > 0.0 ? cosine : 0.0;
+}
+
+double get_attenuation_factor(Light light, Position intersection_position) {
+    double dx = light.position.x - intersection_position.x;
+    double dy = light.position.y - intersection_position.y;
+    double dz = light.position.z - intersection_position.z;
+    double distance = sqrt(dx * dx + dy * dy + dz * dz);
+    double denominator = light.c1 + light.c2 * distance +
+                         light.c3 * distance * distance;
+
+    if (denominator <= 1.0) return 1.0;
+    return 1.0 / denominator;
+}
+
 Color de_que_color(Position eye, Position ray, Config config) {
     Color color;
     Intersection *intersection = first_intersection(eye, ray, config);
@@ -91,7 +159,26 @@ Color de_que_color(Position eye, Position ray, Config config) {
     if (!intersection) {
         color = config.background_color;
     } else {
-        color = intersection->object->color;
+        Object *Q = intersection->object; 
+        Position normal = getVectorN(Q, intersection->position);
+        double intensity = 0.0;
+        for (int k=0; k < config.light_count; k++) {
+            Position l_vector = get_vectorL(intersection->position, config.lights[k].position);
+            double cross_product_LN = get_crossProduct(normal, l_vector);
+            if (cross_product_LN > 0.0) {
+                double fatt = get_attenuation_factor(config.lights[k], intersection->position);
+                intensity += cross_product_LN * Q->reflection_coefficient * fatt *
+                             config.lights[k].light_intensity;
+            }
+        };
+        intensity += config.ambient_intensity * Q->ambient_coefficient;
+        if (intensity > 1.0) intensity = 1.0;
+        if (intensity < 0.0) intensity = 0.0;
+
+        color.a = Q->color.a;
+        color.r = (uint8_t)(Q->color.r * intensity);
+        color.g = (uint8_t)(Q->color.g * intensity);
+        color.b = (uint8_t)(Q->color.b * intensity);
         free(intersection);
     }
     

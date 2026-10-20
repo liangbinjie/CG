@@ -13,6 +13,8 @@
 int load_config(Config *config) {
     if (!config) return 1;
     config->objects = NULL;
+    config->lights = NULL;
+    config->light_count = 0;
 
     FILE *file = fopen(CONFIG_FILE, "r");
     char line[256];
@@ -28,7 +30,34 @@ int load_config(Config *config) {
                 fclose(file);
                 return 1; // Error parsing object
             }
-        } else {
+        } 
+
+        else if (strncmp(line, "light=", 6) == 0) {
+            Light light;
+            if (sscanf(line + 6, " %lf %lf %lf %lf %lf %lf %lf",
+                       &light.position.x, &light.position.y, &light.position.z,
+                       &light.light_intensity, &light.c1, &light.c2, &light.c3) != 7) {
+                free(config->lights);
+                config->lights = NULL;
+                config->light_count = 0;
+                fclose(file); // if error
+                return 1;
+            }
+
+            Light *lights = realloc(config->lights,
+                                    (size_t)(config->light_count + 1) * sizeof(*lights));
+            if (!lights) {
+                free(config->lights);
+                config->lights = NULL;
+                config->light_count = 0;
+                fclose(file);
+                return 1;
+            }
+            config->lights = lights;
+            config->lights[config->light_count++] = light;
+        }
+        
+        else {
             // Parse other configuration parameters
             sscanf(line, "width=%d", &config->width);
             sscanf(line, "height=%d", &config->height);
@@ -44,6 +73,7 @@ int load_config(Config *config) {
             sscanf(line, "background_color_r=%hhu", &config->background_color.r);
             sscanf(line, "background_color_g=%hhu", &config->background_color.g);
             sscanf(line, "background_color_b=%hhu", &config->background_color.b);
+            sscanf(line, "ambient_intensity=%lf",&config->ambient_intensity );
         }
 
         sscanf(line, "width=%d", &config->width);
@@ -61,6 +91,8 @@ int load_config(Config *config) {
         sscanf(line, "background_color_g=%hhu", &config->background_color.g);
         sscanf(line, "background_color_b=%hhu", &config->background_color.b);
     }
+
+    // check values are between 0-1 if not, print error
 
     fclose(file);
     return 0;

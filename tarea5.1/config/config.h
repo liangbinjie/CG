@@ -27,6 +27,24 @@ typedef struct {
     double z;
 } Position;
 
+// La luz tiene una posicion
+// Como tambein una intensidad I_p
+// La distancia hacia cierta luz tiende a decaer, eso nos da el factor de atenuacion, el factor de atenuacion tiene
+// c1, c2, c3, en ninguna circumstancia deberia dar todos 0.
+
+typedef struct {
+    Position position; // una luz tiene una posicion
+
+    // I_p
+    double light_intensity; // numero entre 0 y 1, representa que tan intenso es la luz
+
+    // valores requeridos por el factor de atenuacion
+    // el factor de atenuacion debe ser un numero entre 0 y 1
+    double c1;
+    double c2;
+    double c3;
+} Light;
+
 typedef struct {
     int width;
     int height;
@@ -34,6 +52,11 @@ typedef struct {
     char output_name[100];
     Position eye;
     Color background_color;
+
+    double ambient_intensity; // representa que tan intenso en iluminacion es la escena
+
+    Light *lights;
+    int light_count;
 
     // Linked List of Objects
     Object *objects;
