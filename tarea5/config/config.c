@@ -12,6 +12,7 @@
 
 int load_config(Config *config) {
     if (!config) return 1;
+    memset(config, 0, sizeof(*config));
     config->objects = NULL;
 
     FILE *file = fopen(CONFIG_FILE, "r");
@@ -28,6 +29,30 @@ int load_config(Config *config) {
                 fclose(file);
                 return 1; // Error parsing object
             }
+        } else if (strncmp(line, "light=", 6) == 0) {
+            Light light;
+            if (sscanf(line + 6, "%lf %lf %lf %lf %lf %lf %lf",
+                       &light.position.x, &light.position.y,
+                       &light.position.z, &light.light_intensity,
+                       &light.c1, &light.c2, &light.c3) != 7 ||
+                light.light_intensity < 0.0 || light.c1 < 0.0 ||
+                light.c2 < 0.0 || light.c3 < 0.0 ||
+                (light.c1 == 0.0 && light.c2 == 0.0 && light.c3 == 0.0)) {
+                fclose(file);
+                free(config->lights);
+                free_objects(config->objects);
+                return 1;
+            }
+            Light *lights = realloc(config->lights,
+                                    (size_t)(config->light_count + 1) * sizeof(*lights));
+            if (!lights) {
+                fclose(file);
+                free(config->lights);
+                free_objects(config->objects);
+                return 1;
+            }
+            config->lights = lights;
+            config->lights[config->light_count++] = light;
         } else {
             // Parse other configuration parameters
             sscanf(line, "width=%d", &config->width);
@@ -44,6 +69,7 @@ int load_config(Config *config) {
             sscanf(line, "background_color_r=%hhu", &config->background_color.r);
             sscanf(line, "background_color_g=%hhu", &config->background_color.g);
             sscanf(line, "background_color_b=%hhu", &config->background_color.b);
+            sscanf(line, "ambient_intensity=%lf",&config->ambient_intensity );
         }
 
         sscanf(line, "width=%d", &config->width);

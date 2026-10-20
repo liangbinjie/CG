@@ -16,7 +16,7 @@
 | `c_1`, `c_2`, `c_3` | Coeficientes constante, lineal y cuadrático de atenuación | Valores no negativos; no se fija un máximo | Fuente de luz |
 | `F_att` | Factor de atenuación por distancia | `(0, 1]` para denominador positivo | Fuente de luz (respecto al punto de la superficie) |
 
-**Nota:** `K_D`, `I_p`, `I_A`, `K_A`, `d_L`, `c_1`, `c_2`, `c_3` y `F_att` forman parte de la descripción teórica de iluminación de este README; no son campos de `config.cfg` ni se aplican actualmente en el código. El programa solo admite esferas como tipo de objeto.
+**Nota:** `K_D` y `K_A` se configuran por objeto en la línea `object=sphere`. `I_A` se configura con `ambient_intensity`; cada línea `light=x y z I_p c_1 c_2 c_3` agrega una fuente de luz a la escena. El programa aplica iluminación difusa, ambiente y atenuación por distancia. El programa solo admite esferas como tipo de objeto.
 
 ---
 

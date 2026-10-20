@@ -66,10 +66,11 @@ void load_objects(Config config) {
     while (current != NULL) {
         if (current->type == SPHERE) {
             Sphere *sphere_data = (Sphere *)current->data;
-            printf("Sphere at (%.2f, %.2f, %.2f) with radius %.2f and color (A: %d, R: %d, G: %d, B: %d)\n",
+            printf("Sphere at (%.2f, %.2f, %.2f) with radius %.2f and color (A: %d, R: %d, G: %d, B: %d), kd=%.2f, ka=%.2f\n",
                    current->position.x, current->position.y, current->position.z,
                    sphere_data->radius,
-                   current->color.a, current->color.r, current->color.g, current->color.b);
+                   current->color.a, current->color.r, current->color.g, current->color.b,
+                   current->reflection_coefficient, current->illumination_coefficient);
         }
         current = current->next;
     }
@@ -84,6 +85,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "ERROR: Failed to load config file.\n");
         return 1;
     }
+
+    // load_objects(config);
     
     framebuffer = create_buffer(config);
     
@@ -95,6 +98,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "ERROR: Failed to save AVS file.\n");
         free_buffer(framebuffer, config);
         free_objects(config.objects);
+        free(config.lights);
         return 1;
     }
 
@@ -108,6 +112,7 @@ int main(int argc, char **argv) {
     free_buffer(framebuffer, config);
     
     free_objects(config.objects);
+    free(config.lights);
 
     return 0;
 }
