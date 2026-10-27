@@ -17,7 +17,7 @@ int load_config(Config *config) {
     config->light_count = 0;
 
     FILE *file = fopen(CONFIG_FILE, "r");
-    char line[256];
+    char line[1024];
 
     if (file == NULL) {
         return 1;

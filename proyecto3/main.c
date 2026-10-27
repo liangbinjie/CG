@@ -68,6 +68,10 @@ void load_objects(Config config) {
                    current->position.x, current->position.y, current->position.z,
                    sphere_data->radius,
                    current->color.a, current->color.r, current->color.g, current->color.b);
+        } else if (current->type == POLYGON) {
+            Polygon *polygon = (Polygon *)current->data;
+            printf("Polygon with %d vertices, normal (%.3f, %.3f, %.3f)\n", 
+            polygon->vertex_count, polygon->normal.x, polygon->normal.y, polygon->normal.z);
         }
         current = current->next;
     }

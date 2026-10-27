@@ -6,6 +6,133 @@
 #include <string.h>  // strncmp
 #include <float.h>
 #include <math.h>
+#include <ctype.h>
+
+/* Polygons */
+
+static Position subtract(Position a, Position b) {
+    return (Position){a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+static Position cross(Position a, Position b) {
+    return (Position){a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x};
+}
+
+static double dot(Position a, Position b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+static Vertex2D project(Position p, int dropped_axis) {
+    if (dropped_axis == 0) return (Vertex2D){p.y, p.z};
+    if (dropped_axis == 1) return (Vertex2D){p.x, p.z};
+    return (Vertex2D){p.x, p.y};
+}
+
+static int parse_polygon(const char *line, Object **objects) {
+    int n, used;
+    unsigned int alpha, red, green, blue;
+    double kd, ka;
+    const char *cursor = line;
+    if (sscanf(cursor, "polygon %d %u %u %u %u %lf %lf %n",
+               &n, &alpha, &red, &green, &blue, &kd, &ka, &used) != 7 ||
+        n < 3 || n > 10000 || alpha > 255 || red > 255 ||
+        green > 255 || blue > 255 || kd < 0 || kd > 1 || ka < 0 || ka > 1)
+        return -1;
+    cursor += used;
+    Polygon *polygon = calloc(1, sizeof(*polygon));
+    if (!polygon) return -1;
+    polygon->vertex_count = n;
+    polygon->vertices3d = calloc((size_t)n, sizeof(Position));
+    polygon->vertices2d = calloc((size_t)n, sizeof(Vertex2D));
+    if (!polygon->vertices3d || !polygon->vertices2d) goto fail;
+    for (int i = 0; i < n; i++) {
+        Position *v = &polygon->vertices3d[i];
+        if (sscanf(cursor, " %lf %lf %lf %n", &v->x, &v->y, &v->z, &used) != 3 ||
+            !isfinite(v->x) || !isfinite(v->y) || !isfinite(v->z)) goto fail;
+        cursor += used;
+    }
+    while (isspace((unsigned char)*cursor)) cursor++;
+    if (*cursor && *cursor != '#') goto fail;
+
+    /* Find a noncollinear triple even if the first three vertices are collinear. */
+    Position origin = polygon->vertices3d[0], normal = {0,0,0};
+    for (int i = 1; i < n - 1; i++) {
+        normal = cross(subtract(polygon->vertices3d[i], origin),
+                       subtract(polygon->vertices3d[i+1], origin));
+        if (dot(normal, normal) > 1e-18) break;
+    }
+    double len = sqrt(dot(normal, normal));
+    if (len <= 1e-9) goto fail;
+    polygon->normal = (Position){normal.x/len, normal.y/len, normal.z/len};
+    polygon->plane_d = -dot(polygon->normal, origin);
+    for (int i=0; i<n; i++) {
+        if (fabs(dot(polygon->normal, polygon->vertices3d[i]) + polygon->plane_d) > 1e-5)
+            goto fail;
+    }
+    double ax=fabs(normal.x), ay=fabs(normal.y), az=fabs(normal.z);
+    polygon->dropped_axis = ax >= ay && ax >= az ? 0 : (ay >= az ? 1 : 2);
+    for (int i = 0; i < n; i++)
+        polygon->vertices2d[i] = project(polygon->vertices3d[i], polygon->dropped_axis);
+
+    Color color = {(uint8_t)alpha, (uint8_t)red, (uint8_t)green, (uint8_t)blue};
+    Object *o = create_object(POLYGON, origin, color, polygon);
+    if (!o) goto fail;
+    o->reflection_coefficient = kd;
+    o->ambient_coefficient = ka;
+    *objects = add_object(*objects, o);
+    return 0;
+fail:
+    free(polygon->vertices3d);
+    free(polygon->vertices2d);
+    free(polygon);
+    return -1;
+}
+
+/* Crossing count along the positive U ray after translating the candidate
+   point to (0, 0). Half-open V interval avoids double-counting vertices. */
+int contained_in_polygon(const Polygon *polygon, Position point) {
+    if (!polygon || polygon->vertex_count < 3) return 0;
+    Vertex2D q = project(point, polygon->dropped_axis);
+    int count = 0;
+    for (int i = 0, j = polygon->vertex_count - 1;
+         i < polygon->vertex_count; j = i++) {
+        double u1=polygon->vertices2d[j].u-q.u, v1=polygon->vertices2d[j].v-q.v;
+        double u2=polygon->vertices2d[i].u-q.u, v2=polygon->vertices2d[i].v-q.v;
+        /* Accept a point on the boundary as inside. */
+        double det = u1*v2 - u2*v1;
+        double scale = hypot(u2-u1,v2-v1);
+        if (scale > 0 && fabs(det)/scale <= 1e-8 &&
+            u1*u2+v1*v2 <= 1e-8) return 1;
+        /* Trivial V rejection: both on same side of U axis. */
+        if ((v1 > 0) == (v2 > 0)) continue;
+        /* Trivial rejection: both endpoints to the left. */
+        if (u1 < 0 && u2 < 0) continue;
+        /* Trivial acceptance: both endpoints on nonnegative U. */
+        if (u1 >= 0 && u2 >= 0) { count++; continue; }
+        /* Mixed U signs: calculate intersection with the U axis. */
+        double u_cross = u1 + (u2-u1)*(-v1)/(v2-v1);
+        if (u_cross >= 0) count++;
+    }
+    return count % 2;
+}
+
+int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != POLYGON || !object->data || !t) return 0;
+    const Polygon *p = (const Polygon *)object->data;
+    /* Parallel ray: the plane-intersection denominator is zero. */
+    double denom = dot(p->normal, ray);
+    if (fabs(denom) < 1e-12) return 0;
+    double candidate = -(dot(p->normal, eye) + p->plane_d) / denom;
+    if (candidate <= EPSILON) return 0;
+    Position point = {eye.x+candidate*ray.x, eye.y+candidate*ray.y,
+                      eye.z+candidate*ray.z};
+    if (!contained_in_polygon(p, point)) return 0;
+    *t = candidate;
+    return 1;
+}
+
+
+/* Sphere and Object's parser */
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
                  double *reflection_coefficient, double *ambient_coefficient) {
@@ -72,7 +199,9 @@ int parse_object(const char *line, Object **objects) {
             return 0; 
         }
     }
-
+    
+    if (strncmp(line, "polygon", 7) == 0)
+        return parse_polygon(line, objects);
     return -1;
 }
 
@@ -82,6 +211,12 @@ void free_objects(Object *objects) {
 
     while (current != NULL) {
         next = current->next;
+        
+        if (current->type == POLYGON && current->data) {
+            Polygon *p = (Polygon *)current->data;
+            free(p->vertices3d);
+            free(p->vertices2d);
+        }
 
         free(current->data);
         free(current);
@@ -110,6 +245,8 @@ Position getVectorN(const Object *object, Position intersection_position) {
     switch (object->type) {
         case SPHERE:
             return vectorN_sphere(object, intersection_position);
+        case POLYGON:
+            return ((const Polygon *)object->data)->normal;
         default:
             return normal;
     }
@@ -213,6 +350,11 @@ Intersection *first_intersection(Position eye, Position ray, Config config) {
                     closest = current;
                 }
             }
+        } else if (current->type == POLYGON) {
+            if (intersect_polygon(eye, ray, current, &t) && t > EPSILON && t < tmin) {
+                tmin = t;
+                closest = current;
+            }
         }
         current = current->next;
     }
@@ -268,4 +410,3 @@ int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
 
     return 0;
 }
-
