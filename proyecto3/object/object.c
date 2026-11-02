@@ -5,6 +5,7 @@
 #include <stdlib.h>  // malloc, free
 #include <string.h>  // strncmp
 #include <float.h>
+#include <limits.h>
 #include <math.h>
 #include <ctype.h>
 
@@ -31,7 +32,7 @@ static Vertex2D project(Position p, int dropped_axis) {
 static int parse_polygon(const char *line, Object **objects) {
     int n, used;
     unsigned int alpha, red, green, blue;
-    double kd, ka;
+    double kd, ka, ks = 0.0, kn = 32.0;
     const char *cursor = line;
     if (sscanf(cursor, "polygon %d %u %u %u %u %lf %lf %n",
                &n, &alpha, &red, &green, &blue, &kd, &ka, &used) != 7 ||
@@ -39,20 +40,53 @@ static int parse_polygon(const char *line, Object **objects) {
         green > 255 || blue > 255 || kd < 0 || kd > 1 || ka < 0 || ka > 1)
         return -1;
     cursor += used;
+    size_t value_count = 0;
+    size_t value_capacity = (size_t)n * 3 + 2;
+    double *values = malloc(value_capacity * sizeof(*values));
+    if (!values) return -1;
+    while (value_count < value_capacity) {
+        char *end;
+        double value;
+        while (isspace((unsigned char)*cursor)) cursor++;
+        if (*cursor == '\0' || *cursor == '#') break;
+        value = strtod(cursor, &end);
+        if (end == cursor || !isfinite(value)) {
+            free(values);
+            values = NULL;
+            return -1;
+        }
+        values[value_count++] = value;
+        cursor = end;
+    }
+    if (value_count != (size_t)n * 3 && value_count != (size_t)n * 3 + 2) {
+        free(values);
+        return -1;
+    }
+    if (value_count == (size_t)n * 3 + 2) {
+        ks = values[n * 3];
+        kn = values[n * 3 + 1];
+    }
+    if (ks < 0.0 || ks > 1.0 || kn < 1.0 || kn != floor(kn) ||
+        !isfinite(ks) || !isfinite(kn)) {
+        free(values);
+        return -1;
+    }
     Polygon *polygon = calloc(1, sizeof(*polygon));
-    if (!polygon) return -1;
+    if (!polygon) {
+        free(values);
+        return -1;
+    }
     polygon->vertex_count = n;
     polygon->vertices3d = calloc((size_t)n, sizeof(Position));
     polygon->vertices2d = calloc((size_t)n, sizeof(Vertex2D));
     if (!polygon->vertices3d || !polygon->vertices2d) goto fail;
     for (int i = 0; i < n; i++) {
         Position *v = &polygon->vertices3d[i];
-        if (sscanf(cursor, " %lf %lf %lf %n", &v->x, &v->y, &v->z, &used) != 3 ||
-            !isfinite(v->x) || !isfinite(v->y) || !isfinite(v->z)) goto fail;
-        cursor += used;
+        v->x = values[i * 3];
+        v->y = values[i * 3 + 1];
+        v->z = values[i * 3 + 2];
     }
-    while (isspace((unsigned char)*cursor)) cursor++;
-    if (*cursor && *cursor != '#') goto fail;
+    free(values);
 
     /* Find a noncollinear triple even if the first three vertices are collinear. */
     Position origin = polygon->vertices3d[0], normal = {0,0,0};
@@ -79,9 +113,12 @@ static int parse_polygon(const char *line, Object **objects) {
     if (!o) goto fail;
     o->reflection_coefficient = kd;
     o->ambient_coefficient = ka;
+    o->specular_coefficient = ks;
+    o->shininess = (int)kn;
     *objects = add_object(*objects, o);
     return 0;
 fail:
+    free(values);
     free(polygon->vertices3d);
     free(polygon->vertices2d);
     free(polygon);
@@ -135,14 +172,24 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
 /* Sphere and Object's parser */
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
-                 double *reflection_coefficient, double *ambient_coefficient) {
-    // Format: "sphere x y z alpha red green blue radius K_D K_A"
-    if (sscanf(line, "sphere %lf %lf %lf %hhu %hhu %hhu %hhu %lf %lf %lf",
+                 double *reflection_coefficient, double *ambient_coefficient,
+                 double *specular_coefficient, int *shininess) {
+    int used;
+    double parsed_shininess = 32.0;
+    *specular_coefficient = 0.0;
+    // Optional trailing Ks and Kn preserve the original sphere syntax.
+    if (sscanf(line, "sphere %lf %lf %lf %hhu %hhu %hhu %hhu %lf %lf %lf %n",
                &position->x, &position->y, &position->z,
                &color->a, &color->r, &color->g, &color->b,
-               radius, reflection_coefficient, ambient_coefficient) != 10) {
+               radius, reflection_coefficient, ambient_coefficient, &used) != 10) {
         return -1; 
     }
+    sscanf(line + used, " %lf %lf", specular_coefficient, &parsed_shininess);
+    if (*specular_coefficient < 0.0 || *specular_coefficient > 1.0 ||
+        parsed_shininess < 1.0 || parsed_shininess > INT_MAX ||
+        parsed_shininess != floor(parsed_shininess) ||
+        !isfinite(*specular_coefficient) || !isfinite(parsed_shininess)) return -1;
+    *shininess = (int)parsed_shininess;
     color->a = 255; // Default alpha value
     return 0; 
 }
@@ -178,10 +225,13 @@ int parse_object(const char *line, Object **objects) {
     double radius;
     double reflection_coefficient;
     double ambient_coefficient;
+    double specular_coefficient;
+    int shininess;
 
     if (strncmp(line, "sphere", 6) == 0) {
         if (parse_sphere(line, &position, &color, &radius,
-                         &reflection_coefficient, &ambient_coefficient) == 0) {
+                         &reflection_coefficient, &ambient_coefficient,
+                         &specular_coefficient, &shininess) == 0) {
             Sphere *sphere_data = (Sphere *)malloc(sizeof(Sphere));
             if (!sphere_data) {
                 return -1; // Memory allocation failed
@@ -195,6 +245,8 @@ int parse_object(const char *line, Object **objects) {
             }
             new_object->reflection_coefficient = reflection_coefficient;
             new_object->ambient_coefficient = ambient_coefficient;
+            new_object->specular_coefficient = specular_coefficient;
+            new_object->shininess = shininess;
             *objects = add_object(*objects, new_object);
             return 0; 
         }
@@ -277,6 +329,10 @@ double get_crossProduct(Position vectorN, Position vectorL) {
     return cosine > 0.0 ? cosine : 0.0;
 }
 
+static double dot_product(Position a, Position b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
 double get_attenuation_factor(Light light, Position intersection_position) {
     double dx = light.position.x - intersection_position.x;
     double dy = light.position.y - intersection_position.y;
@@ -303,6 +359,13 @@ Color de_que_color(Position eye, Position ray, Config config) {
             Position l_vector = get_vectorL(intersection->position, config.lights[k].position);
             double cross_product_LN = get_crossProduct(normal, l_vector);
             if (cross_product_LN > 0.0) {
+                Position reflected = {
+                    2.0 * normal.x * cross_product_LN - l_vector.x,
+                    2.0 * normal.y * cross_product_LN - l_vector.y,
+                    2.0 * normal.z * cross_product_LN - l_vector.z
+                };
+                Position view = {-ray.x, -ray.y, -ray.z};
+                double reflected_view = dot_product(reflected, view);
                 
                 // Calculate distance from intersection to light
                 double dx = config.lights[k].position.x - intersection->position.x;
@@ -316,6 +379,11 @@ Color de_que_color(Position eye, Position ray, Config config) {
                 if (!obstacle || obstacle->t >= light_distance) {
                     double fatt = get_attenuation_factor(config.lights[k], intersection->position);
                     intensity += cross_product_LN * Q->reflection_coefficient * fatt * config.lights[k].light_intensity;
+                    if (reflected_view > 0.0) {
+                        intensity += pow(reflected_view, Q->shininess) *
+                                     Q->specular_coefficient * fatt *
+                                     config.lights[k].light_intensity;
+                    }
                 }
                 
                 free(obstacle);

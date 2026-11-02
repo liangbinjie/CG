@@ -45,13 +45,16 @@ struct Object {
     // Lightning coefficient for objects
     double reflection_coefficient; // kd -> [0,1]
     double ambient_coefficient; // ka -> [0,1]
+    double specular_coefficient; // ks -> [0,1]
+    int shininess; // kn >= 1
 
     void *data; // pointer to object-specific data (e.g., radius for sphere)
     struct Object *next; // pointer to the next object in the linked list
 };
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
-                 double *reflection_coefficient, double *ambient_coefficient);
+                 double *reflection_coefficient, double *ambient_coefficient,
+                 double *specular_coefficient, int *shininess);
 
 Object *create_object(ObjectType type, Position position, Color color, void *data);
 Object *add_object(Object *head, Object *new_object);
