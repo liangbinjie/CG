@@ -12,6 +12,7 @@
 
 int load_config(Config *config) {
     if (!config) return 1;
+    double background_alpha = 1.0;
     config->objects = NULL;
     config->lights = NULL;
     config->light_count = 0;
@@ -69,10 +70,10 @@ int load_config(Config *config) {
             sscanf(line, "eye_x=%lf", &config->eye.x);
             sscanf(line, "eye_y=%lf", &config->eye.y);
             sscanf(line, "eye_z=%lf", &config->eye.z);
-            sscanf(line, "background_color_a=%hhu", &config->background_color.a);
-            sscanf(line, "background_color_r=%hhu", &config->background_color.r);
-            sscanf(line, "background_color_g=%hhu", &config->background_color.g);
-            sscanf(line, "background_color_b=%hhu", &config->background_color.b);
+            sscanf(line, "background_color_a=%lf", &background_alpha);
+            sscanf(line, "background_color_r=%Lf", &config->background_color.r);
+            sscanf(line, "background_color_g=%Lf", &config->background_color.g);
+            sscanf(line, "background_color_b=%Lf", &config->background_color.b);
             sscanf(line, "ambient_intensity=%lf",&config->ambient_intensity );
         }
 
@@ -86,13 +87,25 @@ int load_config(Config *config) {
         sscanf(line, "eye_x=%lf", &config->eye.x);
         sscanf(line, "eye_y=%lf", &config->eye.y);
         sscanf(line, "eye_z=%lf", &config->eye.z);
-        sscanf(line, "background_color_a=%hhu", &config->background_color.a);
-        sscanf(line, "background_color_r=%hhu", &config->background_color.r);
-        sscanf(line, "background_color_g=%hhu", &config->background_color.g);
-        sscanf(line, "background_color_b=%hhu", &config->background_color.b);
+        sscanf(line, "background_color_a=%lf", &background_alpha);
+        sscanf(line, "background_color_r=%Lf", &config->background_color.r);
+        sscanf(line, "background_color_g=%Lf", &config->background_color.g);
+        sscanf(line, "background_color_b=%Lf", &config->background_color.b);
     }
 
-    // check values are between 0-1 if not, print error
+    if (background_alpha < 0.0 || background_alpha > 1.0 ||
+        config->background_color.r < 0.0 || config->background_color.r > 1.0 ||
+        config->background_color.g < 0.0 || config->background_color.g > 1.0 ||
+        config->background_color.b < 0.0 || config->background_color.b > 1.0) {
+        free(config->lights);
+        free_objects(config->objects);
+        config->lights = NULL;
+        config->objects = NULL;
+        fclose(file);
+        return 1;
+    }
+
+    config->background_color.a = (uint8_t)(background_alpha * 255.0);
 
     fclose(file);
     return 0;

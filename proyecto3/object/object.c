@@ -31,13 +31,15 @@ static Vertex2D project(Position p, int dropped_axis) {
 
 static int parse_polygon(const char *line, Object **objects) {
     int n, used;
-    unsigned int alpha, red, green, blue;
+    double alpha;
+    long double red, green, blue;
     double kd, ka, ks = 0.0, kn = 32.0;
     const char *cursor = line;
-    if (sscanf(cursor, "polygon %d %u %u %u %u %lf %lf %n",
+    if (sscanf(cursor, "polygon %d %lf %Lf %Lf %Lf %lf %lf %n",
                &n, &alpha, &red, &green, &blue, &kd, &ka, &used) != 7 ||
-        n < 3 || n > 10000 || alpha > 255 || red > 255 ||
-        green > 255 || blue > 255 || kd < 0 || kd > 1 || ka < 0 || ka > 1)
+        n < 3 || n > 10000 || alpha < 0.0 || alpha > 1.0 ||
+        red < 0 || red > 1 || green < 0 || green > 1 || blue < 0 || blue > 1 ||
+        kd < 0 || kd > 1 || ka < 0 || ka > 1)
         return -1;
     cursor += used;
     size_t value_count = 0;
@@ -50,7 +52,7 @@ static int parse_polygon(const char *line, Object **objects) {
         while (isspace((unsigned char)*cursor)) cursor++;
         if (*cursor == '\0' || *cursor == '#') break;
         value = strtod(cursor, &end);
-        if (end == cursor || !isfinite(value)) {
+        if (end == cursor) {
             free(values);
             values = NULL;
             return -1;
@@ -66,8 +68,7 @@ static int parse_polygon(const char *line, Object **objects) {
         ks = values[n * 3];
         kn = values[n * 3 + 1];
     }
-    if (ks < 0.0 || ks > 1.0 || kn < 1.0 || kn != floor(kn) ||
-        !isfinite(ks) || !isfinite(kn)) {
+    if (ks < 0.0 || ks > 1.0 || kn < 1.0 || kn != floor(kn)) {
         free(values);
         return -1;
     }
@@ -108,7 +109,7 @@ static int parse_polygon(const char *line, Object **objects) {
     for (int i = 0; i < n; i++)
         polygon->vertices2d[i] = project(polygon->vertices3d[i], polygon->dropped_axis);
 
-    Color color = {(uint8_t)alpha, (uint8_t)red, (uint8_t)green, (uint8_t)blue};
+    Color color = {(uint8_t)(alpha * 255.0), red, green, blue};
     Object *o = create_object(POLYGON, origin, color, polygon);
     if (!o) goto fail;
     o->reflection_coefficient = kd;
@@ -175,22 +176,28 @@ int parse_sphere(const char *line, Position *position, Color *color, double *rad
                  double *reflection_coefficient, double *ambient_coefficient,
                  double *specular_coefficient, int *shininess) {
     int used;
+    double alpha;
     double parsed_shininess = 32.0;
     *specular_coefficient = 0.0;
-    // Optional trailing Ks and Kn preserve the original sphere syntax.
-    if (sscanf(line, "sphere %lf %lf %lf %hhu %hhu %hhu %hhu %lf %lf %lf %n",
+    
+    if (sscanf(line, "sphere %lf %lf %lf %lf %Lf %Lf %Lf %lf %lf %lf %n",
                &position->x, &position->y, &position->z,
-               &color->a, &color->r, &color->g, &color->b,
+               &alpha, &color->r, &color->g, &color->b,
                radius, reflection_coefficient, ambient_coefficient, &used) != 10) {
         return -1; 
     }
+
+    // Parse optional specular coefficient and shininess if present
     sscanf(line + used, " %lf %lf", specular_coefficient, &parsed_shininess);
-    if (*specular_coefficient < 0.0 || *specular_coefficient > 1.0 ||
+    if (alpha < 0.0 || alpha > 1.0 ||
+        color->r < 0.0 || color->r > 1.0 ||
+        color->g < 0.0 || color->g > 1.0 ||
+        color->b < 0.0 || color->b > 1.0 ||
+        *specular_coefficient < 0.0 || *specular_coefficient > 1.0 ||
         parsed_shininess < 1.0 || parsed_shininess > INT_MAX ||
-        parsed_shininess != floor(parsed_shininess) ||
-        !isfinite(*specular_coefficient) || !isfinite(parsed_shininess)) return -1;
+        parsed_shininess != floor(parsed_shininess)) return -1;
     *shininess = (int)parsed_shininess;
-    color->a = 255; // Default alpha value
+    color->a = (uint8_t)(alpha * 255.0);
     return 0; 
 }
 
@@ -394,9 +401,9 @@ Color de_que_color(Position eye, Position ray, Config config) {
         if (intensity < 0.0) intensity = 0.0;
 
         color.a = Q->color.a;
-        color.r = (uint8_t)(Q->color.r * intensity);
-        color.g = (uint8_t)(Q->color.g * intensity);
-        color.b = (uint8_t)(Q->color.b * intensity);
+        color.r = Q->color.r * (long double)intensity;
+        color.g = Q->color.g * (long double)intensity;
+        color.b = Q->color.b * (long double)intensity;
         free(intersection);
     }
     

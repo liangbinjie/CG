@@ -64,10 +64,7 @@ void load_objects(Config config) {
     while (current != NULL) {
         if (current->type == SPHERE) {
             Sphere *sphere_data = (Sphere *)current->data;
-            printf("Sphere at (%.2f, %.2f, %.2f) with radius %.2f and color (A: %d, R: %d, G: %d, B: %d)\n",
-                   current->position.x, current->position.y, current->position.z,
-                   sphere_data->radius,
-                   current->color.a, current->color.r, current->color.g, current->color.b);
+            
         } else if (current->type == POLYGON) {
             Polygon *polygon = (Polygon *)current->data;
             printf("Polygon with %d vertices, normal (%.3f, %.3f, %.3f)\n", 
