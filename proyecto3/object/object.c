@@ -37,7 +37,7 @@ static int parse_polygon(const char *line, Object **objects) {
     const char *cursor = line;
     if (sscanf(cursor, "polygon %d %lf %Lf %Lf %Lf %lf %lf %n",
                &n, &alpha, &red, &green, &blue, &kd, &ka, &used) != 7 ||
-        n < 3 || n > 10000 || alpha < 0.0 || alpha > 1.0 ||
+        n < 3 || alpha < 0.0 || alpha > 1.0 ||
         red < 0 || red > 1 || green < 0 || green > 1 || blue < 0 || blue > 1 ||
         kd < 0 || kd > 1 || ka < 0 || ka > 1)
         return -1;
@@ -94,14 +94,14 @@ static int parse_polygon(const char *line, Object **objects) {
     for (int i = 1; i < n - 1; i++) {
         normal = cross(subtract(polygon->vertices3d[i], origin),
                        subtract(polygon->vertices3d[i+1], origin));
-        if (dot(normal, normal) > 1e-18) break;
+        if (dot(normal, normal) > 0.00000001) break;
     }
     double len = sqrt(dot(normal, normal));
-    if (len <= 1e-9) goto fail;
+    if (len <= 0.00000001) goto fail;
     polygon->normal = (Position){normal.x/len, normal.y/len, normal.z/len};
     polygon->plane_d = -dot(polygon->normal, origin);
     for (int i=0; i<n; i++) {
-        if (fabs(dot(polygon->normal, polygon->vertices3d[i]) + polygon->plane_d) > 1e-5)
+        if (fabs(dot(polygon->normal, polygon->vertices3d[i]) + polygon->plane_d) > 0.00000001)
             goto fail;
     }
     double ax=fabs(normal.x), ay=fabs(normal.y), az=fabs(normal.z);
@@ -136,11 +136,7 @@ int contained_in_polygon(const Polygon *polygon, Position point) {
          i < polygon->vertex_count; j = i++) {
         double u1=polygon->vertices2d[j].u-q.u, v1=polygon->vertices2d[j].v-q.v;
         double u2=polygon->vertices2d[i].u-q.u, v2=polygon->vertices2d[i].v-q.v;
-        /* Accept a point on the boundary as inside. */
-        double det = u1*v2 - u2*v1;
-        double scale = hypot(u2-u1,v2-v1);
-        if (scale > 0 && fabs(det)/scale <= 1e-8 &&
-            u1*u2+v1*v2 <= 1e-8) return 1;
+        
         /* Trivial V rejection: both on same side of U axis. */
         if ((v1 > 0) == (v2 > 0)) continue;
         /* Trivial rejection: both endpoints to the left. */
@@ -159,7 +155,7 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
     const Polygon *p = (const Polygon *)object->data;
     /* Parallel ray: the plane-intersection denominator is zero. */
     double denom = dot(p->normal, ray);
-    if (fabs(denom) < 1e-12) return 0;
+    if (fabs(denom) < 0.00000001) return 0;
     double candidate = -(dot(p->normal, eye) + p->plane_d) / denom;
     if (candidate <= EPSILON) return 0;
     Position point = {eye.x+candidate*ray.x, eye.y+candidate*ray.y,
