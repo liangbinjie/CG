@@ -9,9 +9,9 @@ typedef struct Object Object;
 
 typedef struct {
     uint8_t a;
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
+    long double r; // normalized channel in [0, 1]
+    long double g;
+    long double b;
 } Color;
 
 typedef struct {

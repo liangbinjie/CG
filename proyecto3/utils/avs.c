@@ -45,9 +45,9 @@ int save_avs(const char *filename, Color **framebuffer, int width, int height) {
 
         for (x = 0; x < width; x++) {
             pixel[0] = framebuffer[y][x].a;
-            pixel[1] = framebuffer[y][x].r;
-            pixel[2] = framebuffer[y][x].g;
-            pixel[3] = framebuffer[y][x].b;
+            pixel[1] = (unsigned char)(framebuffer[y][x].r * 255.0L);
+            pixel[2] = (unsigned char)(framebuffer[y][x].g * 255.0L);
+            pixel[3] = (unsigned char)(framebuffer[y][x].b * 255.0L);
 
             if (fwrite(pixel, sizeof(pixel), 1, file) != 1) {
                 fclose(file);
