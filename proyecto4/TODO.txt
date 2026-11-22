@@ -1,0 +1,11 @@
+- Antialiasing
+- Espejos (rrecusion de 5)
+- Discos
+- Elipses
+- Cilindros
+- Prismas
+- Discos
+- Planos de corte
+- Conos
+- Transparencia no refrectiva
+- Texturas
