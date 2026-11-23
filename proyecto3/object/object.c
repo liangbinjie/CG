@@ -88,6 +88,7 @@ static int parse_polygon(const char *line, Object **objects) {
         v->z = values[i * 3 + 2];
     }
     free(values);
+    values = NULL;
 
     /* Find a noncollinear triple even if the first three vertices are collinear. */
     Position origin = polygon->vertices3d[0], normal = {0,0,0};
@@ -357,6 +358,14 @@ Color de_que_color(Position eye, Position ray, Config config) {
     } else {
         Object *Q = intersection->object; 
         Position normal = getVectorN(Q, intersection->position);
+        
+        // Orient the polygon normal towards the observer.
+	if (Q->type == POLYGON && dot_product(normal, ray) > 0.0) {
+	    normal.x = -normal.x;
+	    normal.y = -normal.y;
+	    normal.z = -normal.z;
+	}
+		
         double intensity = 0.0;
         for (int k=0; k < config.light_count; k++) {
             Position l_vector = get_vectorL(intersection->position, config.lights[k].position);
