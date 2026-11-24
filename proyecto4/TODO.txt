@@ -1,5 +1,5 @@
-- Antialiasing
-- Espejos (rrecusion de 5)
+- Antialiasing ✅
+- Espejos (recusion de 5)
 - Discos
 - Elipses
 - Cilindros
