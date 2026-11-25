@@ -119,7 +119,11 @@ void load_objects(Config config) {
             Polygon *polygon = (Polygon *)current->data;
             printf("Polygon with %d vertices, normal (%.3f, %.3f, %.3f)\n", 
             polygon->vertex_count, polygon->normal.x, polygon->normal.y, polygon->normal.z);
-        }
+        } else if (current->type == DISK) {
+            Disk *disk = (Disk *)current->data;
+
+            printf("Disk with outer radius %.3f, inner radius %.3f, normal (%.3f, %.3f, %.3f)\n", disk->outer_radius, disk->inner_radius, disk->normal.x, disk->normal.y, disk->normal.z);
+        }      
         current = current->next;
     }
 }

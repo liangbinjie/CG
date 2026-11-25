@@ -8,7 +8,8 @@
 
 typedef enum {
     SPHERE,
-    POLYGON
+    POLYGON,
+    DISK
     // Add more object types as needed
 } ObjectType;
 
@@ -17,16 +18,24 @@ typedef struct {
     double radius;
 } Sphere;
 
-/* Polygon keeps its 3D geometry and its optimized 2D projection separately. */
+/* Polygon-specific data */
 typedef struct { double u, v; } Vertex2D;
 typedef struct {
     int vertex_count;
     Position *vertices3d;
     Vertex2D *vertices2d;
-    Position normal;       /* unit normal, fixed for the polygon */
-    double plane_d;       /* normalized A*x+B*y+C*z+D=0 */
-    int dropped_axis;     /* 0:x, 1:y, 2:z */
+    Position normal;       // unit normal, fixed for the polygon
+    double plane_d;       // normalized A*x+B*y+C*z+D=0
+    int dropped_axis;     // 0:x, 1:y, 2:z
 } Polygon;
+
+/* Disk-specific data */
+typedef struct {
+    double outer_radius;
+    double inner_radius;
+    Position normal;
+    double plane_d;
+} Disk;
 
 typedef struct Object Object;
 
@@ -55,6 +64,8 @@ struct Object {
     struct Object *next; // pointer to the next object in the linked list
 };
 
+/* Functions Signature */
+
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
                  double *reflection_coefficient, double *ambient_coefficient,
                  double *specular_coefficient, int *shininess, double *o1, double *o2);
@@ -76,5 +87,5 @@ Intersection *first_intersection(Position eye, Position ray, Config config);
 int intersect_sphere(Position eye, Position ray, Object *object, double *t);
 int intersect_polygon(Position eye, Position ray, Object *object, double *t);
 int contained_in_polygon(const Polygon *polygon, Position point);
-
+int intersect_disk(Position eye, Position ray, Object *object, double *t);
 #endif

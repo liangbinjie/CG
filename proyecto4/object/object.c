@@ -181,6 +181,111 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
     return 1;
 }
 
+/* Disk's parser */
+
+static int parse_disk(const char *line, Object **objects) {
+    Position center, normal;
+    Color color;
+
+    double alpha;
+    double outer_r, inner_r;
+    double kd, ka, ks = 0.0, kn = 32.0;
+    double o1 = 1.0, o2 = 0.0;
+    int used = 0;
+
+    // Parse required disk parameters
+    if (sscanf(line,
+        "disk %lf %lf %lf %lf %Lf %Lf %Lf "
+        "%lf %lf %lf %lf %lf %lf %lf %n",
+        &center.x, &center.y, &center.z,
+        &alpha, &color.r, &color.g, &color.b,
+        &outer_r, &inner_r,
+        &normal.x, &normal.y, &normal.z,
+        &kd, &ka, &used) != 14 || !used) {
+        return -1;
+    }
+    
+    // Parse optional parameters
+    const char *cursor = line + used;
+    double *optional[] = {&ks, &kn, &o1, &o2};
+    int count = 0;
+
+    while (1) {
+        while (isspace((unsigned char)*cursor))
+            cursor++;
+        if (*cursor == '\0' || *cursor == '#')
+            break;
+        if (count == 4)
+            return -1;
+        char *end;
+        *optional[count++] = strtod(cursor, &end);
+        if (end == cursor)
+            return -1;
+        cursor = end;
+    }
+
+    if (count != 0 && count != 2 && count != 4)
+        return -1;
+
+    // Calculate normal magnitude
+    double len = hypot(hypot(normal.x, normal.y), normal.z);
+
+    // Validate parameters
+    if (!isfinite(len) || len == 0.0 || !isfinite(outer_r) ||
+        !isfinite(inner_r) || outer_r <= 0.0 ||
+        inner_r < 0.0 || inner_r >= outer_r ||
+        !isfinite(outer_r * outer_r) ||
+        !isfinite(inner_r * inner_r) || !isfinite(center.x) ||
+        !isfinite(center.y) || !isfinite(center.z) ||
+        !(alpha >= 0.0 && alpha <= 1.0) ||
+        !(color.r >= 0.0 && color.r <= 1.0) ||
+        !(color.g >= 0.0 && color.g <= 1.0) ||
+        !(color.b >= 0.0 && color.b <= 1.0) ||
+        !(kd >= 0.0 && kd <= 1.0) || !(ka >= 0.0 && ka <= 1.0) ||
+        !(ks >= 0.0 && ks <= 1.0) || !(kn >= 1.0 && kn <= INT_MAX) ||
+        kn != floor(kn) || !valid_mirror(o1, o2)) {
+        return -1;
+    }
+
+    // Normalize normal vector
+    normal = (Position){normal.x / len, normal.y / len, normal.z / len};
+
+    // Allocate disk-specific data
+    Disk *disk = malloc(sizeof(Disk));
+
+    if (!disk)
+        return -1;
+
+    disk->outer_radius = outer_r;
+    disk->inner_radius = inner_r;
+    disk->normal = normal;
+    disk->plane_d = -dot(normal, center);
+
+    color.a = (uint8_t)(alpha * 255.0);
+
+    // Create object
+    Object *new_object = create_object(
+        DISK, center, color, disk
+    );
+
+    if (!new_object) {
+        free(disk);
+        return -1;
+    }
+
+    // Set lighting and reflection coefficients
+    new_object->reflection_coefficient = kd;
+    new_object->ambient_coefficient = ka;
+    new_object->specular_coefficient = ks;
+    new_object->shininess = (int)kn;
+    new_object->o1 = o1;
+    new_object->o2 = o2;
+
+    // Add disk to the linked list
+    *objects = add_object(*objects, new_object);
+
+    return 0;
+}
 
 /* Sphere and Object's parser */
 
@@ -281,6 +386,10 @@ int parse_object(const char *line, Object **objects) {
     
     if (strncmp(line, "polygon", 7) == 0)
         return parse_polygon(line, objects);
+        
+    if (strncmp(line, "disk", 4) == 0)
+        return parse_disk(line, objects);
+    
     return -1;
 }
 
@@ -326,6 +435,8 @@ Position getVectorN(const Object *object, Position intersection_position) {
             return vectorN_sphere(object, intersection_position);
         case POLYGON:
             return ((const Polygon *)object->data)->normal;
+        case DISK:
+            return ((const Disk *)object->data)->normal;
         default:
             return normal;
     }
@@ -383,7 +494,7 @@ Color de_que_color(Position eye, Position ray, Config config, int depth) {
         Position normal = getVectorN(Q, intersection->position);
         
         // Orient the polygon normal towards the observer.
-	if (Q->type == POLYGON && dot_product(normal, ray) > 0.0) {
+	if ((Q->type == POLYGON || Q->type == DISK) && dot_product(normal, ray) > 0.0) {
 	    normal.x = -normal.x;
 	    normal.y = -normal.y;
 	    normal.z = -normal.z;
@@ -483,6 +594,12 @@ Intersection *first_intersection(Position eye, Position ray, Config config) {
                 closest = current;
             }
         }
+        else if (current->type == DISK) {
+            if (intersect_disk(eye, ray, current, &t) && t < tmin) {
+                tmin = t;
+                closest = current;
+            }
+        }
         current = current->next;
     }
 
@@ -536,4 +653,42 @@ int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
     }
 
     return 0;
+}
+
+int intersect_disk(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != DISK || !object->data || !t)
+        return 0;
+    const Disk *disk = object->data;
+
+    // Intersection with plane
+    double denom = dot(disk->normal, ray);
+
+    if (fabs(denom) < 1e-8)
+        return 0;
+
+    double candidate = -(dot(disk->normal, eye) + disk->plane_d)/denom;
+
+    if (!isfinite(candidate) || candidate <= EPSILON)
+        return 0;
+
+    // Intersection point with plane
+    Position point = {
+        eye.x + candidate * ray.x,
+        eye.y + candidate * ray.y,
+        eye.z + candidate * ray.z
+    };
+
+    // Vector from center point to intersection point
+    Position delta = subtract(point, object->position);
+
+    // Is the point inside the disk?
+    double distance_sq = dot(delta, delta);
+    double outer_r_sq = disk->outer_radius * disk->outer_radius;
+    double inner_r_sq = disk->inner_radius * disk->inner_radius;
+
+    if (distance_sq > outer_r_sq || distance_sq < inner_r_sq)
+        return 0;
+    *t = candidate;
+
+    return 1;
 }
