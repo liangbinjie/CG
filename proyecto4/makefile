@@ -2,10 +2,16 @@ CC = cc
 LDLIBS = -lm
 OBJECTS = main.o utils/avs.o config/config.o object/object.o
 OUTPUT = main
+TEST_OUTPUT = tests/test_quadric
 
 $(OUTPUT): $(OBJECTS)
 	$(CC) -o $(OUTPUT) $(OBJECTS) $(LDLIBS)
 
+test: $(TEST_OUTPUT)
+	./$(TEST_OUTPUT)
+
+$(TEST_OUTPUT): tests/test_quadric.c config/config.o object/object.o
+	$(CC) $(CFLAGS) -o $(TEST_OUTPUT) tests/test_quadric.c config/config.o object/object.o $(LDLIBS)
 
 main.o: main.c utils/avs.h config/config.h object/object.h
 	$(CC) $(CFLAGS) -c main.c -o main.o
@@ -25,3 +31,4 @@ clean:
 	rm -f config/*.o
 	rm -f object/*.o
 	rm -f $(OUTPUT)
+	rm -f $(TEST_OUTPUT)

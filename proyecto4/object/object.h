@@ -10,7 +10,8 @@ typedef enum {
     SPHERE,
     POLYGON,
     DISK,
-    ELLIPSE
+    ELLIPSE,
+    QUADRIC
     // Add more object types as needed
 } ObjectType;
 
@@ -47,6 +48,12 @@ typedef struct {
     double plane_d;
 } Ellipse;
 
+/* Coefficients for A*x^2+B*y^2+C*z^2+D*x*y+E*x*z+F*y*z
+   +G*x+H*y+I*z+J=0 in coordinates relative to the object position. */
+typedef struct {
+    double coefficients[10];
+} Quadric;
+
 typedef struct Object Object;
 
 /* Intersection struct */
@@ -71,6 +78,8 @@ struct Object {
     void *data; // pointer to object-specific data (e.g., radius for sphere)
     double o1; // Original color
     double o2; // Reflected color
+    CutPlane *cut_planes;
+    int cut_plane_count;
     struct Object *next; // pointer to the next object in the linked list
 };
 
@@ -100,5 +109,6 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t);
 int contained_in_polygon(const Polygon *polygon, Position point);
 int intersect_disk(Position eye, Position ray, Object *object, double *t);
 int intersect_ellipse(Position eye, Position ray, Object *object, double *t);
+int intersect_quadric(Position eye, Position ray, Object *object, double *t);
 
 #endif

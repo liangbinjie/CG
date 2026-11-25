@@ -29,6 +29,17 @@ static double dot(Position a, Position b) {
     return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
+static int point_passes_cut_planes(const Object *object, Position point) {
+    if (!object) return 0;
+    for (int i = 0; i < object->cut_plane_count; i++) {
+        const CutPlane *plane = &object->cut_planes[i];
+        double evaluation = plane->a * point.x + plane->b * point.y +
+                            plane->c * point.z + plane->d;
+        if (!isfinite(evaluation) || evaluation > EPSILON) return 0;
+    }
+    return 1;
+}
+
 static Vertex2D project(Position p, int dropped_axis) {
     if (dropped_axis == 0) return (Vertex2D){p.y, p.z};
     if (dropped_axis == 1) return (Vertex2D){p.x, p.z};
@@ -176,7 +187,8 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
     if (candidate <= EPSILON) return 0;
     Position point = {eye.x+candidate*ray.x, eye.y+candidate*ray.y,
                       eye.z+candidate*ray.z};
-    if (!contained_in_polygon(p, point)) return 0;
+    if (!contained_in_polygon(p, point) ||
+        !point_passes_cut_planes(object, point)) return 0;
     *t = candidate;
     return 1;
 }
@@ -397,6 +409,62 @@ static int parse_ellipse(const char *line, Object **objects) {
     return 0;
 }
 
+static int parse_quadric(const char *line, Object **objects) {
+    Position position;
+    Color color;
+    double alpha, kd, ka, ks, kn, o1, o2;
+    Quadric *quadric = calloc(1, sizeof(*quadric));
+    if (!quadric) return -1;
+
+    int parsed = sscanf(line,
+        "quadric %lf %lf %lf %lf %Lf %Lf %Lf %lf %lf %lf %lf %lf %lf "
+        "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+        &position.x, &position.y, &position.z, &alpha,
+        &color.r, &color.g, &color.b, &kd, &ka, &ks, &kn, &o1, &o2,
+        &quadric->coefficients[0], &quadric->coefficients[1],
+        &quadric->coefficients[2], &quadric->coefficients[3],
+        &quadric->coefficients[4], &quadric->coefficients[5],
+        &quadric->coefficients[6], &quadric->coefficients[7],
+        &quadric->coefficients[8], &quadric->coefficients[9]);
+
+    int quadratic_term = 0;
+    for (int i = 0; i < 6; i++)
+        if (quadric->coefficients[i] != 0.0) quadratic_term = 1;
+
+    if (parsed != 23 || !isfinite(position.x) || !isfinite(position.y) ||
+        !isfinite(position.z) || !(alpha >= 0.0 && alpha <= 1.0) ||
+        !(color.r >= 0.0 && color.r <= 1.0) ||
+        !(color.g >= 0.0 && color.g <= 1.0) ||
+        !(color.b >= 0.0 && color.b <= 1.0) ||
+        !(kd >= 0.0 && kd <= 1.0) || !(ka >= 0.0 && ka <= 1.0) ||
+        !(ks >= 0.0 && ks <= 1.0) || !(kn >= 1.0 && kn <= INT_MAX) ||
+        kn != floor(kn) || !valid_mirror(o1, o2) || !quadratic_term) {
+        free(quadric);
+        return -1;
+    }
+    for (int i = 0; i < 10; i++) {
+        if (!isfinite(quadric->coefficients[i])) {
+            free(quadric);
+            return -1;
+        }
+    }
+
+    color.a = (uint8_t)(alpha * 255.0);
+    Object *object = create_object(QUADRIC, position, color, quadric);
+    if (!object) {
+        free(quadric);
+        return -1;
+    }
+    object->reflection_coefficient = kd;
+    object->ambient_coefficient = ka;
+    object->specular_coefficient = ks;
+    object->shininess = (int)kn;
+    object->o1 = o1;
+    object->o2 = o2;
+    *objects = add_object(*objects, object);
+    return 0;
+}
+
 /* Sphere and Object's parser */
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
@@ -442,6 +510,8 @@ Object *create_object(ObjectType type, Position position, Color color, void *dat
     new_object->data = data;
     new_object->o1 = 1.0;
     new_object->o2 = 0.0;
+    new_object->cut_planes = NULL;
+    new_object->cut_plane_count = 0;
     new_object->next = NULL;
 
     return new_object;
@@ -502,6 +572,9 @@ int parse_object(const char *line, Object **objects) {
     
     if (strncmp(line, "ellipse", 7) == 0)
         return parse_ellipse(line, objects);
+
+    if (strncmp(line, "quadric", 7) == 0)
+        return parse_quadric(line, objects);
     
     return -1;
 }
@@ -518,6 +591,7 @@ void free_objects(Object *objects) {
             free(p->vertices3d);
             free(p->vertices2d);
         }
+        free(current->cut_planes);
 
         free(current->data);
         free(current);
@@ -552,6 +626,22 @@ Position getVectorN(const Object *object, Position intersection_position) {
             return ((const Disk *)object->data)->normal;
         case ELLIPSE:
             return ((const Ellipse *)object->data)->normal;
+        case QUADRIC: {
+            const Quadric *quadric = (const Quadric *)object->data;
+            const double *q = quadric->coefficients;
+            double x = intersection_position.x - object->position.x;
+            double y = intersection_position.y - object->position.y;
+            double z = intersection_position.z - object->position.z;
+            Position gradient = {
+                2.0*q[0]*x + q[3]*y + q[4]*z + q[6],
+                2.0*q[1]*y + q[3]*x + q[5]*z + q[7],
+                2.0*q[2]*z + q[4]*x + q[5]*y + q[8]
+            };
+            double length = hypot(hypot(gradient.x, gradient.y), gradient.z);
+            if (!isfinite(length) || length <= 1e-12) return normal;
+            return (Position){gradient.x/length, gradient.y/length,
+                              gradient.z/length};
+        }
         default:
             return normal;
     }
@@ -609,7 +699,8 @@ Color de_que_color(Position eye, Position ray, Config config, int depth) {
         Position normal = getVectorN(Q, intersection->position);
         
         // Orient the polygon normal towards the observer.
-	if ((Q->type == POLYGON || Q->type == DISK || Q->type == ELLIPSE) && dot_product(normal, ray) > 0.0) {
+	if ((Q->type == POLYGON || Q->type == DISK || Q->type == ELLIPSE ||
+             Q->type == QUADRIC) && dot_product(normal, ray) > 0.0) {
 	    normal.x = -normal.x;
 	    normal.y = -normal.y;
 	    normal.z = -normal.z;
@@ -719,6 +810,11 @@ Intersection *first_intersection(Position eye, Position ray, Config config) {
                 tmin = t;
                 closest = current;
             }
+        } else if (current->type == QUADRIC) {
+            if (intersect_quadric(eye, ray, current, &t) && t < tmin) {
+                tmin = t;
+                closest = current;
+            }
         }
         current = current->next;
     }
@@ -741,6 +837,7 @@ Intersection *first_intersection(Position eye, Position ray, Config config) {
 }
 
 int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != SPHERE || !object->data || !t) return 0;
     Sphere *sphere = (Sphere *)object->data;
     double t1, t2;
 
@@ -762,14 +859,16 @@ int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
     t1 = (-b - sqrt(discriminant)) / (2.0 * a);
     t2 = (-b + sqrt(discriminant)) / (2.0 * a);
 
-    if (t1 > EPSILON) {
-        *t = t1;
-        return 1;
-    }
-
-    if (t2 > EPSILON) {
-        *t = t2;
-        return 1;
+    double candidates[2] = {t1, t2};
+    for (int i = 0; i < 2; i++) {
+        double candidate = candidates[i];
+        if (candidate <= EPSILON || !isfinite(candidate)) continue;
+        Position point = {eye.x + candidate*ray.x, eye.y + candidate*ray.y,
+                          eye.z + candidate*ray.z};
+        if (point_passes_cut_planes(object, point)) {
+            *t = candidate;
+            return 1;
+        }
     }
 
     return 0;
@@ -797,6 +896,7 @@ int intersect_disk(Position eye, Position ray, Object *object, double *t) {
         eye.y + candidate * ray.y,
         eye.z + candidate * ray.z
     };
+    if (!point_passes_cut_planes(object, point)) return 0;
 
     // Vector from center point to intersection point
     Position delta = subtract(point, object->position);
@@ -833,6 +933,7 @@ int intersect_ellipse(Position eye, Position ray, Object *object, double *t) {
         eye.y + candidate * ray.y,
         eye.z + candidate * ray.z
     };
+    if (!point_passes_cut_planes(object, point)) return 0;
 
     // Vectors from the foci to the intersection point
     Position delta1 = subtract(point, ellipse->focus1);
@@ -847,4 +948,58 @@ int intersect_ellipse(Position eye, Position ray, Object *object, double *t) {
         return 0;
     *t = candidate;
     return 1;
+}
+
+int intersect_quadric(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != QUADRIC || !object->data || !t) return 0;
+    const Quadric *quadric = (const Quadric *)object->data;
+    const double *q = quadric->coefficients;
+    double x = eye.x - object->position.x;
+    double y = eye.y - object->position.y;
+    double z = eye.z - object->position.z;
+
+    double a = q[0]*ray.x*ray.x + q[1]*ray.y*ray.y +
+               q[2]*ray.z*ray.z + q[3]*ray.x*ray.y +
+               q[4]*ray.x*ray.z + q[5]*ray.y*ray.z;
+    double b = (2.0*q[0]*x + q[3]*y + q[4]*z + q[6])*ray.x +
+               (2.0*q[1]*y + q[3]*x + q[5]*z + q[7])*ray.y +
+               (2.0*q[2]*z + q[4]*x + q[5]*y + q[8])*ray.z;
+    double c = q[0]*x*x + q[1]*y*y + q[2]*z*z + q[3]*x*y +
+               q[4]*x*z + q[5]*y*z + q[6]*x + q[7]*y + q[8]*z + q[9];
+
+    if (!isfinite(a) || !isfinite(b) || !isfinite(c)) return 0;
+    double candidates[2];
+    int candidate_count = 0;
+    if (a == 0.0) {
+        if (b == 0.0) return 0;
+        candidates[candidate_count++] = -c / b;
+    } else {
+        double discriminant = b*b - 4.0*a*c;
+        if (!isfinite(discriminant) || discriminant < 0.0) return 0;
+        double root = sqrt(discriminant);
+        double qroot = -0.5 * (b + copysign(root, b));
+        if (qroot == 0.0) {
+            candidates[candidate_count++] = -b / (2.0*a);
+        } else {
+            candidates[candidate_count++] = qroot / a;
+            candidates[candidate_count++] = c / qroot;
+            if (candidates[0] > candidates[1]) {
+                double swap = candidates[0];
+                candidates[0] = candidates[1];
+                candidates[1] = swap;
+            }
+        }
+    }
+
+    for (int i = 0; i < candidate_count; i++) {
+        double candidate = candidates[i];
+        if (!isfinite(candidate) || candidate <= EPSILON) continue;
+        Position point = {eye.x + candidate*ray.x, eye.y + candidate*ray.y,
+                          eye.z + candidate*ray.z};
+        if (point_passes_cut_planes(object, point)) {
+            *t = candidate;
+            return 1;
+        }
+    }
+    return 0;
 }

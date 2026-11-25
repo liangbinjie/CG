@@ -27,6 +27,14 @@ typedef struct {
     double z;
 } Position;
 
+typedef struct {
+    int id;
+    double a;
+    double b;
+    double c;
+    double d;
+} CutPlane;
+
 // La luz tiene una posicion
 // Como tambein una intensidad I_p
 // La distancia hacia cierta luz tiende a decaer, eso nos da el factor de atenuacion, el factor de atenuacion tiene
