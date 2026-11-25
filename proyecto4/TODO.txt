@@ -1,5 +1,5 @@
 - Antialiasing ✅
-- Espejos (recusion de 5)
+- Espejos (recusion de 5) ✅
 - Discos
 - Elipses
 - Cilindros
@@ -9,3 +9,10 @@
 - Conos
 - Transparencia no refrectiva
 - Texturas
+
+
+Nuevos formatos:
+
+object=sphere X Y Z A R G B RADIO Kd Ka Ks Kn O1 O2
+object=polygon N A R G B Kd Ka X1 Y1 Z1 ... Xn Yn Zn Ks Kn O1 O2
+NOTA: Un obj sin reflexion, lleva o1=1.0 y o2=0.0

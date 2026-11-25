@@ -55,7 +55,7 @@ static Color sample_ray(double x, double y, Config config) {
     ray.x /= L;
     ray.y /= L;
     ray.z /= L;
-    return de_que_color(config.eye, ray, config);
+    return de_que_color(config.eye, ray, config, MAX_REFLECTION_DEPTH);
 }
 
 // Corner order: (x0,y0), (x1,y0), (x0,y1), (x1,y1).

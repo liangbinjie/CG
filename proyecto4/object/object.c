@@ -9,6 +9,12 @@
 #include <math.h>
 #include <ctype.h>
 
+static int valid_mirror(double o1, double o2) {
+    return isfinite(o1) && isfinite(o2) && o1 >= 0.0 
+           && o1 <= 1.0 && o2 >= 0.0 && o2 <= 1.0 &&
+           fabs(o1 + o2 - 1.0) < 1e-9;
+}
+
 /* Polygons */
 
 static Position subtract(Position a, Position b) {
@@ -34,6 +40,7 @@ static int parse_polygon(const char *line, Object **objects) {
     double alpha;
     long double red, green, blue;
     double kd, ka, ks = 0.0, kn = 32.0;
+    double o1 = 1.0, o2 = 0.0;
     const char *cursor = line;
     if (sscanf(cursor, "polygon %d %lf %Lf %Lf %Lf %lf %lf %n",
                &n, &alpha, &red, &green, &blue, &kd, &ka, &used) != 7 ||
@@ -43,7 +50,7 @@ static int parse_polygon(const char *line, Object **objects) {
         return -1;
     cursor += used;
     size_t value_count = 0;
-    size_t value_capacity = (size_t)n * 3 + 2;
+    size_t value_capacity = (size_t)n * 3 + 4;
     double *values = malloc(value_capacity * sizeof(*values));
     if (!values) return -1;
     while (value_count < value_capacity) {
@@ -60,15 +67,21 @@ static int parse_polygon(const char *line, Object **objects) {
         values[value_count++] = value;
         cursor = end;
     }
-    if (value_count != (size_t)n * 3 && value_count != (size_t)n * 3 + 2) {
+    if (value_count != (size_t)n * 3 &&
+        value_count != (size_t)n * 3 + 2 &&
+        value_count != (size_t)n * 3 + 4) {
         free(values);
         return -1;
     }
-    if (value_count == (size_t)n * 3 + 2) {
+    if (value_count >= (size_t)n * 3 + 2) {
         ks = values[n * 3];
         kn = values[n * 3 + 1];
     }
-    if (ks < 0.0 || ks > 1.0 || kn < 1.0 || kn != floor(kn)) {
+    if (value_count == (size_t)n * 3 + 4) {
+        o1 = values[n * 3 + 2];
+        o2 = values[n * 3 + 3];
+    }
+    if (ks < 0.0 || ks > 1.0 || kn < 1.0 || kn != floor(kn) || !valid_mirror(o1, o2)) {
         free(values);
         return -1;
     }
@@ -117,6 +130,8 @@ static int parse_polygon(const char *line, Object **objects) {
     o->ambient_coefficient = ka;
     o->specular_coefficient = ks;
     o->shininess = (int)kn;
+    o->o1 = o1;
+    o->o2 = o2;
     *objects = add_object(*objects, o);
     return 0;
 fail:
@@ -171,11 +186,13 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
                  double *reflection_coefficient, double *ambient_coefficient,
-                 double *specular_coefficient, int *shininess) {
+                 double *specular_coefficient, int *shininess, double *o1, double *o2) {
     int used;
     double alpha;
     double parsed_shininess = 32.0;
     *specular_coefficient = 0.0;
+    *o1 = 1.0;
+    *o2 = 0.0;
     
     if (sscanf(line, "sphere %lf %lf %lf %lf %Lf %Lf %Lf %lf %lf %lf %n",
                &position->x, &position->y, &position->z,
@@ -185,14 +202,14 @@ int parse_sphere(const char *line, Position *position, Color *color, double *rad
     }
 
     // Parse optional specular coefficient and shininess if present
-    sscanf(line + used, " %lf %lf", specular_coefficient, &parsed_shininess);
+    sscanf(line + used, " %lf %lf %lf %lf", specular_coefficient, &parsed_shininess, o1, o2);
     if (alpha < 0.0 || alpha > 1.0 ||
         color->r < 0.0 || color->r > 1.0 ||
         color->g < 0.0 || color->g > 1.0 ||
         color->b < 0.0 || color->b > 1.0 ||
         *specular_coefficient < 0.0 || *specular_coefficient > 1.0 ||
         parsed_shininess < 1.0 || parsed_shininess > INT_MAX ||
-        parsed_shininess != floor(parsed_shininess)) return -1;
+        parsed_shininess != floor(parsed_shininess) || !valid_mirror(*o1, *o2)) return -1;
     *shininess = (int)parsed_shininess;
     color->a = (uint8_t)(alpha * 255.0);
     return 0; 
@@ -208,6 +225,8 @@ Object *create_object(ObjectType type, Position position, Color color, void *dat
     new_object->position = position;
     new_object->color = color;
     new_object->data = data;
+    new_object->o1 = 1.0;
+    new_object->o2 = 0.0;
     new_object->next = NULL;
 
     return new_object;
@@ -231,11 +250,13 @@ int parse_object(const char *line, Object **objects) {
     double ambient_coefficient;
     double specular_coefficient;
     int shininess;
+    double o1;
+    double o2;
 
     if (strncmp(line, "sphere", 6) == 0) {
         if (parse_sphere(line, &position, &color, &radius,
                          &reflection_coefficient, &ambient_coefficient,
-                         &specular_coefficient, &shininess) == 0) {
+                         &specular_coefficient, &shininess, &o1, &o2) == 0) {
             Sphere *sphere_data = (Sphere *)malloc(sizeof(Sphere));
             if (!sphere_data) {
                 return -1; // Memory allocation failed
@@ -251,6 +272,8 @@ int parse_object(const char *line, Object **objects) {
             new_object->ambient_coefficient = ambient_coefficient;
             new_object->specular_coefficient = specular_coefficient;
             new_object->shininess = shininess;
+            new_object->o1 = o1;
+            new_object->o2 = o2;
             *objects = add_object(*objects, new_object);
             return 0; 
         }
@@ -349,7 +372,7 @@ double get_attenuation_factor(Light light, Position intersection_position) {
     return 1.0 / denominator;
 }
 
-Color de_que_color(Position eye, Position ray, Config config) {
+Color de_que_color(Position eye, Position ray, Config config, int depth) {
     Color color;
     Intersection *intersection = first_intersection(eye, ray, config);
     
@@ -409,6 +432,30 @@ Color de_que_color(Position eye, Position ray, Config config) {
         color.r = Q->color.r * (long double)intensity;
         color.g = Q->color.g * (long double)intensity;
         color.b = Q->color.b * (long double)intensity;
+        
+        // Mirror reflection
+	if (depth > 0 && Q->o2 > 0.0) {
+	    // Calculate reflected ray direction
+	    double projection = dot(normal, ray);
+
+	    Position reflected_ray = {
+		ray.x - 2.0 * projection * normal.x,
+		ray.y - 2.0 * projection * normal.y,
+		ray.z - 2.0 * projection * normal.z
+	    };
+
+	    // The intersection becomes the new observer
+	    Position origin = intersection->position;
+
+	    // Recursive Backward Ray Tracing
+	    Color reflected_color = de_que_color(origin, reflected_ray, config, depth - 1);
+
+	    // Mix original and reflected colors
+	    color.r = Q->o1 * color.r + Q->o2 * reflected_color.r;
+	    color.g = Q->o1 * color.g + Q->o2 * reflected_color.g;
+	    color.b = Q->o1 * color.b + Q->o2 * reflected_color.b;
+	}
+        
         free(intersection);
     }
     
@@ -478,12 +525,12 @@ int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
     t1 = (-b - sqrt(discriminant)) / (2.0 * a);
     t2 = (-b + sqrt(discriminant)) / (2.0 * a);
 
-    if (t1 > 0.0) {
+    if (t1 > EPSILON) {
         *t = t1;
         return 1;
     }
 
-    if (t2 > 0.0) {
+    if (t2 > EPSILON) {
         *t = t2;
         return 1;
     }

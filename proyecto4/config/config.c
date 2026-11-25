@@ -28,6 +28,7 @@ int load_config(Config *config) {
         if (strncmp(line, "object=", 7) == 0) {
             // Parse the object line
             if (parse_object(line + 7, &config->objects) != 0) {
+                fprintf(stderr, "ERROR: Failed to parse object:\n%s\n", line);
                 fclose(file);
                 return 1; // Error parsing object
             }

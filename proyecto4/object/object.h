@@ -4,6 +4,7 @@
 #include "../config/config.h"
 
 #define EPSILON 0.0005
+#define MAX_REFLECTION_DEPTH 5
 
 typedef enum {
     SPHERE,
@@ -49,12 +50,14 @@ struct Object {
     int shininess; // kn >= 1
 
     void *data; // pointer to object-specific data (e.g., radius for sphere)
+    double o1; // Original color
+    double o2; // Reflected color
     struct Object *next; // pointer to the next object in the linked list
 };
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
                  double *reflection_coefficient, double *ambient_coefficient,
-                 double *specular_coefficient, int *shininess);
+                 double *specular_coefficient, int *shininess, double *o1, double *o2);
 
 Object *create_object(ObjectType type, Position position, Color color, void *data);
 Object *add_object(Object *head, Object *new_object);
@@ -68,7 +71,7 @@ Position get_vectorL(Position intersection_position, Position light_position);
 double get_crossProduct(Position vectorN, Position vectorL);
 double get_attenuation_factor(Light light, Position intersection_position);
 
-Color de_que_color(Position eye, Position ray, Config config);
+Color de_que_color(Position eye, Position ray, Config config, int depth);
 Intersection *first_intersection(Position eye, Position ray, Config config);
 int intersect_sphere(Position eye, Position ray, Object *object, double *t);
 int intersect_polygon(Position eye, Position ray, Object *object, double *t);
