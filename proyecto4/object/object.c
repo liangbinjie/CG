@@ -182,7 +182,6 @@ int intersect_polygon(Position eye, Position ray, Object *object, double *t) {
 }
 
 /* Disk's parser */
-
 static int parse_disk(const char *line, Object **objects) {
     Position center, normal;
     Color color;
@@ -197,11 +196,9 @@ static int parse_disk(const char *line, Object **objects) {
     if (sscanf(line,
         "disk %lf %lf %lf %lf %Lf %Lf %Lf "
         "%lf %lf %lf %lf %lf %lf %lf %n",
-        &center.x, &center.y, &center.z,
-        &alpha, &color.r, &color.g, &color.b,
-        &outer_r, &inner_r,
-        &normal.x, &normal.y, &normal.z,
-        &kd, &ka, &used) != 14 || !used) {
+        &center.x, &center.y, &center.z, &alpha, &color.r, 
+        &color.g, &color.b, &outer_r, &inner_r, &normal.x, 
+        &normal.y, &normal.z, &kd, &ka, &used) != 14 || !used) {
         return -1;
     }
     
@@ -252,22 +249,18 @@ static int parse_disk(const char *line, Object **objects) {
 
     // Allocate disk-specific data
     Disk *disk = malloc(sizeof(Disk));
-
     if (!disk)
         return -1;
-
     disk->outer_radius = outer_r;
     disk->inner_radius = inner_r;
     disk->normal = normal;
     disk->plane_d = -dot(normal, center);
-
     color.a = (uint8_t)(alpha * 255.0);
 
     // Create object
     Object *new_object = create_object(
         DISK, center, color, disk
     );
-
     if (!new_object) {
         free(disk);
         return -1;
@@ -284,6 +277,123 @@ static int parse_disk(const char *line, Object **objects) {
     // Add disk to the linked list
     *objects = add_object(*objects, new_object);
 
+    return 0;
+}
+
+/* Ellipses */
+static int parse_ellipse(const char *line, Object **objects) {
+    Position focus1, focus2, normal;
+    Color color;
+
+    double alpha, R;
+    double kd, ka, ks = 0.0, kn = 32.0;
+    double o1 = 1.0, o2 = 0.0;
+    int used = 0;
+
+    // Parse required ellipse parameters
+    if (sscanf(line,
+        "ellipse %lf %lf %lf %lf %lf %lf %lf %Lf %Lf %Lf "
+        "%lf %lf %lf %lf %lf %lf %n",
+        &focus1.x, &focus1.y, &focus1.z,
+        &focus2.x, &focus2.y, &focus2.z,
+        &alpha, &color.r, &color.g, &color.b, &R, &normal.x, 
+        &normal.y, &normal.z, &kd, &ka, &used) != 16 || !used) {
+        return -1;
+    }
+
+    // Parse optional parameters
+    const char *cursor = line + used;
+    double *optional[] = {&ks, &kn, &o1, &o2};
+    int count = 0;
+
+    while (1) {
+        while (isspace((unsigned char)*cursor))
+            cursor++;
+        if (*cursor == '\0' || *cursor == '#')
+            break;
+        if (count == 4)
+            return -1;
+        char *end;
+        *optional[count++] = strtod(cursor, &end);
+        if (end == cursor)
+            return -1;
+        cursor = end;
+    }
+    if (count != 0 && count != 2 && count != 4)
+        return -1;
+
+    // Calculate normal magnitude
+    double len = hypot(hypot(normal.x, normal.y), normal.z);
+
+    // Vector between the two foci
+    Position delta = subtract(focus2, focus1);
+
+    double focal_distance = hypot(hypot(delta.x, delta.y), delta.z);
+
+    // Validate parameters
+    if (!isfinite(len) || len == 0.0 || !isfinite(R) || R <= 0.0 ||
+        !isfinite(focal_distance) || R <= focal_distance ||
+        !isfinite(focus1.x) || !isfinite(focus1.y) ||
+        !isfinite(focus1.z) || !isfinite(focus2.x) ||
+        !isfinite(focus2.y) || !isfinite(focus2.z) ||
+        !(alpha >= 0.0 && alpha <= 1.0) ||
+        !(color.r >= 0.0 && color.r <= 1.0) ||
+        !(color.g >= 0.0 && color.g <= 1.0) ||
+        !(color.b >= 0.0 && color.b <= 1.0) ||
+        !(kd >= 0.0 && kd <= 1.0) || !(ka >= 0.0 && ka <= 1.0) ||
+        !(ks >= 0.0 && ks <= 1.0) || !(kn >= 1.0 && kn <= INT_MAX) ||
+        kn != floor(kn) || !valid_mirror(o1, o2)) {
+        return -1;
+    }
+
+    // Normalize normal vector
+    normal = (Position){ normal.x / len, normal.y / len, normal.z / len};
+
+    // Verify that both foci belong to the same plane
+    if (fabs(dot(normal, delta)) > EPSILON)
+        return -1;
+
+    // Calculate ellipse center
+    Position center = {
+        focus1.x * 0.5 + focus2.x * 0.5,
+        focus1.y * 0.5 + focus2.y * 0.5,
+        focus1.z * 0.5 + focus2.z * 0.5
+    };
+    double plane_d = -dot(normal, focus1);
+    if (!isfinite(plane_d))
+        return -1;
+
+    // Allocate ellipse-specific data
+    Ellipse *ellipse = malloc(sizeof(Ellipse));
+
+    if (!ellipse)
+        return -1;
+
+    ellipse->focus1 = focus1;
+    ellipse->focus2 = focus2;
+    ellipse->R = R;
+    ellipse->normal = normal;
+    ellipse->plane_d = plane_d;
+
+    color.a = (uint8_t)(alpha * 255.0);
+
+    // Create object
+    Object *new_object = create_object( ELLIPSE, center, color, ellipse);
+    if (!new_object) {
+        free(ellipse);
+        return -1;
+    }
+
+    // Set lighting and reflection coefficients
+    new_object->reflection_coefficient = kd;
+    new_object->ambient_coefficient = ka;
+    new_object->specular_coefficient = ks;
+    new_object->shininess = (int)kn;
+    new_object->o1 = o1;
+    new_object->o2 = o2;
+
+    // Add ellipse to the linked list
+    *objects = add_object(*objects, new_object);
     return 0;
 }
 
@@ -390,6 +500,9 @@ int parse_object(const char *line, Object **objects) {
     if (strncmp(line, "disk", 4) == 0)
         return parse_disk(line, objects);
     
+    if (strncmp(line, "ellipse", 7) == 0)
+        return parse_ellipse(line, objects);
+    
     return -1;
 }
 
@@ -437,6 +550,8 @@ Position getVectorN(const Object *object, Position intersection_position) {
             return ((const Polygon *)object->data)->normal;
         case DISK:
             return ((const Disk *)object->data)->normal;
+        case ELLIPSE:
+            return ((const Ellipse *)object->data)->normal;
         default:
             return normal;
     }
@@ -494,7 +609,7 @@ Color de_que_color(Position eye, Position ray, Config config, int depth) {
         Position normal = getVectorN(Q, intersection->position);
         
         // Orient the polygon normal towards the observer.
-	if ((Q->type == POLYGON || Q->type == DISK) && dot_product(normal, ray) > 0.0) {
+	if ((Q->type == POLYGON || Q->type == DISK || Q->type == ELLIPSE) && dot_product(normal, ray) > 0.0) {
 	    normal.x = -normal.x;
 	    normal.y = -normal.y;
 	    normal.z = -normal.z;
@@ -599,6 +714,11 @@ Intersection *first_intersection(Position eye, Position ray, Config config) {
                 tmin = t;
                 closest = current;
             }
+        } else if (current->type == ELLIPSE) {
+            if (intersect_ellipse(eye, ray, current, &t) && t < tmin) {
+                tmin = t;
+                closest = current;
+            }
         }
         current = current->next;
     }
@@ -690,5 +810,41 @@ int intersect_disk(Position eye, Position ray, Object *object, double *t) {
         return 0;
     *t = candidate;
 
+    return 1;
+}
+
+int intersect_ellipse(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != ELLIPSE || !object->data || !t)
+        return 0;
+    const Ellipse *ellipse = object->data;
+
+    // Intersection with plane
+    double denom = dot(ellipse->normal, ray);
+    if (fabs(denom) < 1e-8)
+        return 0;
+
+    double candidate = -(dot(ellipse->normal, eye) + ellipse->plane_d)/denom;
+    if (!isfinite(candidate) || candidate <= EPSILON)
+        return 0;
+
+    // Intersection point with plane
+    Position point = {
+        eye.x + candidate * ray.x,
+        eye.y + candidate * ray.y,
+        eye.z + candidate * ray.z
+    };
+
+    // Vectors from the foci to the intersection point
+    Position delta1 = subtract(point, ellipse->focus1);
+    Position delta2 = subtract(point, ellipse->focus2);
+
+    // Calculate distances to both foci
+    double d1 = sqrt(dot(delta1, delta1));
+    double d2 = sqrt(dot(delta2, delta2));
+
+    // Is the point inside the ellipse?
+    if (!isfinite(d1 + d2) || d1 + d2 > ellipse->R)
+        return 0;
+    *t = candidate;
     return 1;
 }

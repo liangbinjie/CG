@@ -9,7 +9,8 @@
 typedef enum {
     SPHERE,
     POLYGON,
-    DISK
+    DISK,
+    ELLIPSE
     // Add more object types as needed
 } ObjectType;
 
@@ -36,6 +37,15 @@ typedef struct {
     Position normal;
     double plane_d;
 } Disk;
+
+/* Ellipse-specific data */
+typedef struct {
+    Position focus1;
+    Position focus2;
+    double R;
+    Position normal;
+    double plane_d;
+} Ellipse;
 
 typedef struct Object Object;
 
@@ -84,8 +94,11 @@ double get_attenuation_factor(Light light, Position intersection_position);
 
 Color de_que_color(Position eye, Position ray, Config config, int depth);
 Intersection *first_intersection(Position eye, Position ray, Config config);
+
 int intersect_sphere(Position eye, Position ray, Object *object, double *t);
 int intersect_polygon(Position eye, Position ray, Object *object, double *t);
 int contained_in_polygon(const Polygon *polygon, Position point);
 int intersect_disk(Position eye, Position ray, Object *object, double *t);
+int intersect_ellipse(Position eye, Position ray, Object *object, double *t);
+
 #endif
