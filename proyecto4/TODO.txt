@@ -3,12 +3,13 @@
 - Discos
 - Elipses
 - Cilindros
-- Prismas
-- Discos
-- Planos de corte
 - Conos
+- Planos de corte
 - Transparencia no refrectiva
-- Texturas
+- Superficies cuadraticas
+- Texturas en Poligonos
+- Texturas en Cilindros
+- Texturas en Esferas
 
 
 Nuevos formatos:
