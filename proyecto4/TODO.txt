@@ -17,6 +17,6 @@
 object=sphere X Y Z A R G B RADIO Kd Ka Ks Kn O1 O2
 object=polygon N A R G B Kd Ka X1 Y1 Z1 ... Xn Yn Zn Ks Kn O1 O2
 object=disk X Y Z A R G B outer_radius inner_radius NX NY NZ kd ka ks kn o1 o2
-object=ellipse F1x F1y F1z F2x F2y F2z A R G B K Nx Ny Nz kd ka [ks kn o1 o2]
+object=ellipse F1x F1y F1z F2x F2y F2z A R G B K Nx Ny Nz kd ka ks kn o1 o2
 
 NOTA: Un obj sin reflexion, lleva o1=1.0 y o2=0.0
