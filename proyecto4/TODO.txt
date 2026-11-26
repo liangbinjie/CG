@@ -38,10 +38,14 @@ hacia el siguiente objeto o el fondo; no aplica refracción.
 El eje Q del cilindro se normaliza al cargarlo. B y F limitan la distancia axial
 d desde el ancla X0,Y0,Z0; el cilindro conserva la superficie lateral curva y
 puede además usar cut_planes.
+usarlo de la siguiente manera:
+object=cylinder X0 Y0 Z0 Qx Qy Qz radius B F alpha R G B Kd Ka Ks Kn O1 O2 O3
+
 
 El cono usa Q como eje desde la punta X0,Y0,Z0. M es la distancia axial de
 referencia y N el radio en esa distancia; por lo tanto r(d)=d*N/M. B y F
 recortan la superficie lateral en la dirección positiva de Q; también se
 aplican cut_planes y el cono no genera tapa.
-usarlo de la siguiente manera:
-object=cylinder X0 Y0 Z0 Qx Qy Qz radius B F alpha R G B Kd Ka Ks Kn O1 O2 O3
+
+object=cone X0 Y0 Z0 Qx Qy Qz M N B F alpha R G B kd ka [ks kn [o1 o2 [o3]]] [cut_planes=COUNT ID...]
+object=cone 320 100 150 0.5 1 0 180 90 0 260 1.0 0.95 0.48 0.08 0.8 0.45 0.25 32 1.0 0.0 0.0 cut_planes=1 1
