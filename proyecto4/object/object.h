@@ -11,7 +11,8 @@ typedef enum {
     POLYGON,
     DISK,
     ELLIPSE,
-    QUADRIC
+    QUADRIC,
+    CYLINDER
     // Add more object types as needed
 } ObjectType;
 
@@ -19,6 +20,13 @@ typedef enum {
 typedef struct {
     double radius;
 } Sphere;
+
+typedef struct {
+    Position axis;       // normalized cylinder axis direction
+    double radius;
+    double min_d;         // axial lower bound from the anchor
+    double max_d;         // axial upper bound from the anchor
+} Cylinder;
 
 /* Polygon-specific data */
 typedef struct { double u, v; } Vertex2D;
@@ -113,5 +121,6 @@ int contained_in_polygon(const Polygon *polygon, Position point);
 int intersect_disk(Position eye, Position ray, Object *object, double *t);
 int intersect_ellipse(Position eye, Position ray, Object *object, double *t);
 int intersect_quadric(Position eye, Position ray, Object *object, double *t);
+int intersect_cylinder(Position eye, Position ray, Object *object, double *t);
 
 #endif

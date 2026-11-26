@@ -561,6 +561,64 @@ int parse_sphere(const char *line, Position *position, Color *color, double *rad
     return 0; 
 }
 
+static int parse_cylinder(const char *line, Object **objects) {
+    Position anchor, axis;
+    Color color;
+    double alpha, radius, min_d, max_d, kd, ka;
+    double ks = 0.0, kn = 32.0, o1 = 1.0, o2 = 0.0, o3 = 0.0;
+    int used = 0;
+    if (sscanf(line,
+        "cylinder %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %Lf %Lf %Lf %lf %lf %n",
+        &anchor.x, &anchor.y, &anchor.z,
+        &axis.x, &axis.y, &axis.z, &radius, &min_d, &max_d, &alpha,
+        &color.r, &color.g, &color.b, &kd, &ka, &used) != 15 || !used)
+        return -1;
+
+    double optional[5];
+    int optional_count;
+    if (parse_optional_values(line + used, optional, 5, &optional_count) != 0 ||
+        (optional_count != 0 && optional_count != 2 &&
+         optional_count != 4 && optional_count != 5)) return -1;
+    if (optional_count >= 2) { ks = optional[0]; kn = optional[1]; }
+    if (optional_count >= 4) { o1 = optional[2]; o2 = optional[3]; }
+    if (optional_count == 5) o3 = optional[4];
+
+    double axis_length = hypot(hypot(axis.x, axis.y), axis.z);
+    if (!isfinite(anchor.x) || !isfinite(anchor.y) || !isfinite(anchor.z) ||
+        !isfinite(axis_length) || axis_length == 0.0 ||
+        !isfinite(radius) || radius <= 0.0 || !isfinite(radius * radius) ||
+        !isfinite(min_d) || !isfinite(max_d) || min_d > max_d ||
+        !(alpha >= 0.0 && alpha <= 1.0) ||
+        !(color.r >= 0.0 && color.r <= 1.0) ||
+        !(color.g >= 0.0 && color.g <= 1.0) ||
+        !(color.b >= 0.0 && color.b <= 1.0) ||
+        !(kd >= 0.0 && kd <= 1.0) || !(ka >= 0.0 && ka <= 1.0) ||
+        !(ks >= 0.0 && ks <= 1.0) || !(kn >= 1.0 && kn <= INT_MAX) ||
+        kn != floor(kn) || !valid_mix(o1, o2, o3)) return -1;
+
+    axis = (Position){axis.x / axis_length, axis.y / axis_length,
+                      axis.z / axis_length};
+    Cylinder *cylinder = malloc(sizeof(*cylinder));
+    if (!cylinder) return -1;
+    cylinder->axis = axis;
+    cylinder->radius = radius;
+    cylinder->min_d = min_d;
+    cylinder->max_d = max_d;
+    color.a = (uint8_t)(alpha * 255.0);
+
+    Object *object = create_object(CYLINDER, anchor, color, cylinder);
+    if (!object) { free(cylinder); return -1; }
+    object->reflection_coefficient = kd;
+    object->ambient_coefficient = ka;
+    object->specular_coefficient = ks;
+    object->shininess = (int)kn;
+    object->o1 = o1;
+    object->o2 = o2;
+    object->o3 = o3;
+    *objects = add_object(*objects, object);
+    return 0;
+}
+
 Object *create_object(ObjectType type, Position position, Color color, void *data) {
     Object *new_object = (Object *)malloc(sizeof(Object));
     if (!new_object) {
@@ -641,6 +699,9 @@ int parse_object(const char *line, Object **objects) {
 
     if (strncmp(line, "quadric", 7) == 0)
         return parse_quadric(line, objects);
+
+    if (strncmp(line, "cylinder", 8) == 0)
+        return parse_cylinder(line, objects);
     
     return -1;
 }
@@ -692,6 +753,20 @@ Position getVectorN(const Object *object, Position intersection_position) {
             return ((const Disk *)object->data)->normal;
         case ELLIPSE:
             return ((const Ellipse *)object->data)->normal;
+        case CYLINDER: {
+            const Cylinder *cylinder = object->data;
+            Position from_anchor = subtract(intersection_position, object->position);
+            double axial = dot(from_anchor, cylinder->axis);
+            Position normal = {
+                from_anchor.x - axial * cylinder->axis.x,
+                from_anchor.y - axial * cylinder->axis.y,
+                from_anchor.z - axial * cylinder->axis.z
+            };
+            double length = hypot(hypot(normal.x, normal.y), normal.z);
+            if (length <= 1e-12 || !isfinite(length)) return (Position){0,0,0};
+            return (Position){normal.x / length, normal.y / length,
+                              normal.z / length};
+        }
         case QUADRIC: {
             const Quadric *quadric = (const Quadric *)object->data;
             const double *q = quadric->coefficients;
@@ -772,7 +847,8 @@ static Color de_que_color_internal(Position eye, Position ray, Config config,
         
         // Orient the polygon normal towards the observer.
 	if ((Q->type == POLYGON || Q->type == DISK || Q->type == ELLIPSE ||
-             Q->type == QUADRIC) && dot_product(normal, ray) > 0.0) {
+	     Q->type == QUADRIC || Q->type == CYLINDER) &&
+            dot_product(normal, ray) > 0.0) {
 	    normal.x = -normal.x;
 	    normal.y = -normal.y;
 	    normal.z = -normal.z;
@@ -936,6 +1012,11 @@ static Intersection *first_intersection_excluding(Position eye, Position ray,
             }
         } else if (current->type == QUADRIC) {
             if (intersect_quadric(eye, ray, current, &t) && t < tmin) {
+                tmin = t;
+                closest = current;
+            }
+        } else if (current->type == CYLINDER) {
+            if (intersect_cylinder(eye, ray, current, &t) && t < tmin) {
                 tmin = t;
                 closest = current;
             }
@@ -1128,6 +1209,65 @@ int intersect_quadric(Position eye, Position ray, Object *object, double *t) {
             *t = candidate;
             return 1;
         }
+    }
+    return 0;
+}
+
+int intersect_cylinder(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != CYLINDER || !object->data || !t) return 0;
+    const Cylinder *cylinder = object->data;
+    Position offset = subtract(eye, object->position);
+    double origin_axis = dot(offset, cylinder->axis);
+    double direction_axis = dot(ray, cylinder->axis);
+    Position origin_perp = {
+        offset.x - origin_axis * cylinder->axis.x,
+        offset.y - origin_axis * cylinder->axis.y,
+        offset.z - origin_axis * cylinder->axis.z
+    };
+    Position direction_perp = {
+        ray.x - direction_axis * cylinder->axis.x,
+        ray.y - direction_axis * cylinder->axis.y,
+        ray.z - direction_axis * cylinder->axis.z
+    };
+
+    double a = dot(direction_perp, direction_perp);
+    double b = 2.0 * dot(origin_perp, direction_perp);
+    double c = dot(origin_perp, origin_perp) - cylinder->radius * cylinder->radius;
+    if (!isfinite(a) || !isfinite(b) || !isfinite(c) || a <= 1e-14)
+        return 0; // A ray parallel to the axis does not cross the side surface.
+
+    double discriminant = b * b - 4.0 * a * c;
+    if (!isfinite(discriminant) || discriminant < 0.0) return 0;
+    double root = sqrt(discriminant);
+    double qroot = -0.5 * (b + copysign(root, b));
+    double candidates[2];
+    int candidate_count;
+    if (qroot == 0.0) {
+        candidates[0] = -b / (2.0 * a);
+        candidate_count = 1;
+    } else {
+        candidates[0] = qroot / a;
+        candidates[1] = c / qroot;
+        if (candidates[0] > candidates[1]) {
+            double swap = candidates[0];
+            candidates[0] = candidates[1];
+            candidates[1] = swap;
+        }
+        candidate_count = 2;
+    }
+
+    for (int i = 0; i < candidate_count; i++) {
+        double candidate = candidates[i];
+        if (!isfinite(candidate) || candidate <= EPSILON) continue;
+        Position point = {eye.x + candidate * ray.x,
+                          eye.y + candidate * ray.y,
+                          eye.z + candidate * ray.z};
+        Position from_anchor = subtract(point, object->position);
+        double d = dot(from_anchor, cylinder->axis);
+        if (d < cylinder->min_d - EPSILON || d > cylinder->max_d + EPSILON ||
+            !point_passes_cut_planes(object, point)) continue;
+        *t = candidate;
+        return 1;
     }
     return 0;
 }

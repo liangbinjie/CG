@@ -123,6 +123,11 @@ void load_objects(Config config) {
             Disk *disk = (Disk *)current->data;
 
             printf("Disk with outer radius %.3f, inner radius %.3f, normal (%.3f, %.3f, %.3f)\n", disk->outer_radius, disk->inner_radius, disk->normal.x, disk->normal.y, disk->normal.z);
+        } else if (current->type == CYLINDER) {
+            Cylinder *cylinder = (Cylinder *)current->data;
+            printf("Cylinder radius %.3f, axis (%.3f, %.3f, %.3f), axial range [%.3f, %.3f]\n",
+                   cylinder->radius, cylinder->axis.x, cylinder->axis.y,
+                   cylinder->axis.z, cylinder->min_d, cylinder->max_d);
         }      
         current = current->next;
     }
