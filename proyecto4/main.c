@@ -128,6 +128,12 @@ void load_objects(Config config) {
             printf("Cylinder radius %.3f, axis (%.3f, %.3f, %.3f), axial range [%.3f, %.3f]\n",
                    cylinder->radius, cylinder->axis.x, cylinder->axis.y,
                    cylinder->axis.z, cylinder->min_d, cylinder->max_d);
+        } else if (current->type == CONE) {
+            Cone *cone = (Cone *)current->data;
+            printf("Cone reference radius %.3f at distance %.3f, axis (%.3f, %.3f, %.3f), axial range [%.3f, %.3f]\n",
+                   cone->reference_radius, cone->reference_distance,
+                   cone->axis.x, cone->axis.y, cone->axis.z,
+                   cone->min_d, cone->max_d);
         }      
         current = current->next;
     }

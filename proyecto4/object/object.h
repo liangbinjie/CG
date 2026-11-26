@@ -12,7 +12,8 @@ typedef enum {
     DISK,
     ELLIPSE,
     QUADRIC,
-    CYLINDER
+    CYLINDER,
+    CONE
     // Add more object types as needed
 } ObjectType;
 
@@ -27,6 +28,14 @@ typedef struct {
     double min_d;         // axial lower bound from the anchor
     double max_d;         // axial upper bound from the anchor
 } Cylinder;
+
+typedef struct {
+    Position axis;           // normalized direction from the tip
+    double reference_distance; // M: axial distance at reference radius N
+    double reference_radius;  // N: radius at M
+    double min_d;
+    double max_d;
+} Cone;
 
 /* Polygon-specific data */
 typedef struct { double u, v; } Vertex2D;
@@ -122,5 +131,6 @@ int intersect_disk(Position eye, Position ray, Object *object, double *t);
 int intersect_ellipse(Position eye, Position ray, Object *object, double *t);
 int intersect_quadric(Position eye, Position ray, Object *object, double *t);
 int intersect_cylinder(Position eye, Position ray, Object *object, double *t);
+int intersect_cone(Position eye, Position ray, Object *object, double *t);
 
 #endif

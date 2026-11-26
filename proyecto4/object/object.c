@@ -9,8 +9,12 @@
 #include <math.h>
 #include <ctype.h>
 
+static int finite_number(double value) {
+    return value == value && value <= DBL_MAX && value >= -DBL_MAX;
+}
+
 static int valid_mix(double o1, double o2, double o3) {
-    return isfinite(o1) && isfinite(o2) && isfinite(o3) &&
+    return finite_number(o1) && finite_number(o2) && finite_number(o3) &&
            o1 >= 0.0 && o1 <= 1.0 && o2 >= 0.0 && o2 <= 1.0 &&
            o3 >= 0.0 && o3 <= 1.0 && fabs(o1 + o2 + o3 - 1.0) < 1e-9;
 }
@@ -50,7 +54,7 @@ static int point_passes_cut_planes(const Object *object, Position point) {
         const CutPlane *plane = &object->cut_planes[i];
         double evaluation = plane->a * point.x + plane->b * point.y +
                             plane->c * point.z + plane->d;
-        if (!isfinite(evaluation) || evaluation > EPSILON) return 0;
+        if (!finite_number(evaluation) || evaluation > EPSILON) return 0;
     }
     return 1;
 }
@@ -107,7 +111,7 @@ static int parse_polygon(const char *line, Object **objects) {
     int texture_id = 0;
     if (extra == 1) {
         double raw_id = values[n * 3];
-        if (!isfinite(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
+        if (!finite_number(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
             free(values); return -1;
         }
         texture_id = (int)raw_id;
@@ -122,7 +126,7 @@ static int parse_polygon(const char *line, Object **objects) {
     }
     if (extra == 3 || extra == 5) {
         double raw_id = values[n * 3 + extra - 1];
-        if (!isfinite(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
+        if (!finite_number(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
             free(values); return -1;
         }
         texture_id = (int)raw_id;
@@ -130,7 +134,7 @@ static int parse_polygon(const char *line, Object **objects) {
     if (extra == 6) {
         o3 = values[n * 3 + 4];
         double raw_id = values[n * 3 + 5];
-        if (!isfinite(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
+        if (!finite_number(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
             free(values); return -1;
         }
         texture_id = (int)raw_id;
@@ -283,15 +287,15 @@ static int parse_disk(const char *line, Object **objects) {
         return -1;
 
     // Calculate normal magnitude
-    double len = hypot(hypot(normal.x, normal.y), normal.z);
+    double len = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
 
     // Validate parameters
-    if (!isfinite(len) || len == 0.0 || !isfinite(outer_r) ||
-        !isfinite(inner_r) || outer_r <= 0.0 ||
+    if (!finite_number(len) || len == 0.0 || !finite_number(outer_r) ||
+        !finite_number(inner_r) || outer_r <= 0.0 ||
         inner_r < 0.0 || inner_r >= outer_r ||
-        !isfinite(outer_r * outer_r) ||
-        !isfinite(inner_r * inner_r) || !isfinite(center.x) ||
-        !isfinite(center.y) || !isfinite(center.z) ||
+        !finite_number(outer_r * outer_r) ||
+        !finite_number(inner_r * inner_r) || !finite_number(center.x) ||
+        !finite_number(center.y) || !finite_number(center.z) ||
         !(alpha >= 0.0 && alpha <= 1.0) ||
         !(color.r >= 0.0 && color.r <= 1.0) ||
         !(color.g >= 0.0 && color.g <= 1.0) ||
@@ -382,19 +386,19 @@ static int parse_ellipse(const char *line, Object **objects) {
         return -1;
 
     // Calculate normal magnitude
-    double len = hypot(hypot(normal.x, normal.y), normal.z);
+    double len = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
 
     // Vector between the two foci
     Position delta = subtract(focus2, focus1);
 
-    double focal_distance = hypot(hypot(delta.x, delta.y), delta.z);
+    double focal_distance = sqrt(delta.x*delta.x + delta.y*delta.y + delta.z*delta.z);
 
     // Validate parameters
-    if (!isfinite(len) || len == 0.0 || !isfinite(R) || R <= 0.0 ||
-        !isfinite(focal_distance) || R <= focal_distance ||
-        !isfinite(focus1.x) || !isfinite(focus1.y) ||
-        !isfinite(focus1.z) || !isfinite(focus2.x) ||
-        !isfinite(focus2.y) || !isfinite(focus2.z) ||
+    if (!finite_number(len) || len == 0.0 || !finite_number(R) || R <= 0.0 ||
+        !finite_number(focal_distance) || R <= focal_distance ||
+        !finite_number(focus1.x) || !finite_number(focus1.y) ||
+        !finite_number(focus1.z) || !finite_number(focus2.x) ||
+        !finite_number(focus2.y) || !finite_number(focus2.z) ||
         !(alpha >= 0.0 && alpha <= 1.0) ||
         !(color.r >= 0.0 && color.r <= 1.0) ||
         !(color.g >= 0.0 && color.g <= 1.0) ||
@@ -419,7 +423,7 @@ static int parse_ellipse(const char *line, Object **objects) {
         focus1.z * 0.5 + focus2.z * 0.5
     };
     double plane_d = -dot(normal, focus1);
-    if (!isfinite(plane_d))
+    if (!finite_number(plane_d))
         return -1;
 
     // Allocate ellipse-specific data
@@ -477,14 +481,14 @@ static int parse_quadric(const char *line, Object **objects) {
     int quadratic_term = 0;
     for (int i = 0; i < 10; i++) {
         quadric->coefficients[i] = values[coefficient_start + i];
-        if (!isfinite(quadric->coefficients[i])) {
+        if (!finite_number(quadric->coefficients[i])) {
             free(quadric);
             return -1;
         }
         if (i < 6 && quadric->coefficients[i] != 0.0) quadratic_term = 1;
     }
 
-    if (!isfinite(position.x) || !isfinite(position.y) || !isfinite(position.z) ||
+    if (!finite_number(position.x) || !finite_number(position.y) || !finite_number(position.z) ||
         !(alpha >= 0.0 && alpha <= 1.0) ||
         !(color.r >= 0.0 && color.r <= 1.0) ||
         !(color.g >= 0.0 && color.g <= 1.0) ||
@@ -583,11 +587,11 @@ static int parse_cylinder(const char *line, Object **objects) {
     if (optional_count >= 4) { o1 = optional[2]; o2 = optional[3]; }
     if (optional_count == 5) o3 = optional[4];
 
-    double axis_length = hypot(hypot(axis.x, axis.y), axis.z);
-    if (!isfinite(anchor.x) || !isfinite(anchor.y) || !isfinite(anchor.z) ||
-        !isfinite(axis_length) || axis_length == 0.0 ||
-        !isfinite(radius) || radius <= 0.0 || !isfinite(radius * radius) ||
-        !isfinite(min_d) || !isfinite(max_d) || min_d > max_d ||
+    double axis_length = sqrt(axis.x*axis.x + axis.y*axis.y + axis.z*axis.z);
+    if (!finite_number(anchor.x) || !finite_number(anchor.y) || !finite_number(anchor.z) ||
+        !finite_number(axis_length) || axis_length == 0.0 ||
+        !finite_number(radius) || radius <= 0.0 || !finite_number(radius * radius) ||
+        !finite_number(min_d) || !finite_number(max_d) || min_d > max_d ||
         !(alpha >= 0.0 && alpha <= 1.0) ||
         !(color.r >= 0.0 && color.r <= 1.0) ||
         !(color.g >= 0.0 && color.g <= 1.0) ||
@@ -608,6 +612,67 @@ static int parse_cylinder(const char *line, Object **objects) {
 
     Object *object = create_object(CYLINDER, anchor, color, cylinder);
     if (!object) { free(cylinder); return -1; }
+    object->reflection_coefficient = kd;
+    object->ambient_coefficient = ka;
+    object->specular_coefficient = ks;
+    object->shininess = (int)kn;
+    object->o1 = o1;
+    object->o2 = o2;
+    object->o3 = o3;
+    *objects = add_object(*objects, object);
+    return 0;
+}
+
+static int parse_cone(const char *line, Object **objects) {
+    Position tip, axis;
+    Color color;
+    double M, N, min_d, max_d, alpha, kd, ka;
+    double ks = 0.0, kn = 32.0, o1 = 1.0, o2 = 0.0, o3 = 0.0;
+    int used = 0;
+    if (sscanf(line,
+        "cone %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %Lf %Lf %Lf %lf %lf %n",
+        &tip.x, &tip.y, &tip.z, &axis.x, &axis.y, &axis.z,
+        &M, &N, &min_d, &max_d, &alpha,
+        &color.r, &color.g, &color.b, &kd, &ka, &used) != 16 || !used)
+        return -1;
+
+    double optional[5];
+    int optional_count;
+    if (parse_optional_values(line + used, optional, 5, &optional_count) != 0 ||
+        (optional_count != 0 && optional_count != 2 &&
+         optional_count != 4 && optional_count != 5)) return -1;
+    if (optional_count >= 2) { ks = optional[0]; kn = optional[1]; }
+    if (optional_count >= 4) { o1 = optional[2]; o2 = optional[3]; }
+    if (optional_count == 5) o3 = optional[4];
+
+    double axis_length = sqrt(axis.x*axis.x + axis.y*axis.y + axis.z*axis.z);
+    double slope = N / M;
+    if (!finite_number(tip.x) || !finite_number(tip.y) || !finite_number(tip.z) ||
+        !finite_number(axis_length) || axis_length == 0.0 ||
+        !finite_number(M) || M <= 0.0 || !finite_number(N) || N <= 0.0 ||
+        !finite_number(slope) || !finite_number(slope * slope) ||
+        !finite_number(min_d) || !finite_number(max_d) || min_d < 0.0 || min_d > max_d ||
+        !(alpha >= 0.0 && alpha <= 1.0) ||
+        !(color.r >= 0.0 && color.r <= 1.0) ||
+        !(color.g >= 0.0 && color.g <= 1.0) ||
+        !(color.b >= 0.0 && color.b <= 1.0) ||
+        !(kd >= 0.0 && kd <= 1.0) || !(ka >= 0.0 && ka <= 1.0) ||
+        !(ks >= 0.0 && ks <= 1.0) || !(kn >= 1.0 && kn <= INT_MAX) ||
+        kn != floor(kn) || !valid_mix(o1, o2, o3)) return -1;
+
+    axis = (Position){axis.x / axis_length, axis.y / axis_length,
+                      axis.z / axis_length};
+    Cone *cone = malloc(sizeof(*cone));
+    if (!cone) return -1;
+    cone->axis = axis;
+    cone->reference_distance = M;
+    cone->reference_radius = N;
+    cone->min_d = min_d;
+    cone->max_d = max_d;
+    color.a = (uint8_t)(alpha * 255.0);
+
+    Object *object = create_object(CONE, tip, color, cone);
+    if (!object) { free(cone); return -1; }
     object->reflection_coefficient = kd;
     object->ambient_coefficient = ka;
     object->specular_coefficient = ks;
@@ -702,6 +767,9 @@ int parse_object(const char *line, Object **objects) {
 
     if (strncmp(line, "cylinder", 8) == 0)
         return parse_cylinder(line, objects);
+
+    if (strncmp(line, "cone", 4) == 0)
+        return parse_cone(line, objects);
     
     return -1;
 }
@@ -762,8 +830,27 @@ Position getVectorN(const Object *object, Position intersection_position) {
                 from_anchor.y - axial * cylinder->axis.y,
                 from_anchor.z - axial * cylinder->axis.z
             };
-            double length = hypot(hypot(normal.x, normal.y), normal.z);
-            if (length <= 1e-12 || !isfinite(length)) return (Position){0,0,0};
+            double length = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+            if (length <= 1e-12 || !finite_number(length)) return (Position){0,0,0};
+            return (Position){normal.x / length, normal.y / length,
+                              normal.z / length};
+        }
+        case CONE: {
+            const Cone *cone = object->data;
+            Position from_tip = subtract(intersection_position, object->position);
+            double axial = dot(from_tip, cone->axis);
+            double slope = cone->reference_radius / cone->reference_distance;
+            double slope_squared = slope * slope;
+            Position normal = {
+                from_tip.x - axial * cone->axis.x -
+                    slope_squared * axial * cone->axis.x,
+                from_tip.y - axial * cone->axis.y -
+                    slope_squared * axial * cone->axis.y,
+                from_tip.z - axial * cone->axis.z -
+                    slope_squared * axial * cone->axis.z
+            };
+            double length = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+            if (length <= 1e-12 || !finite_number(length)) return (Position){0,0,0};
             return (Position){normal.x / length, normal.y / length,
                               normal.z / length};
         }
@@ -778,8 +865,8 @@ Position getVectorN(const Object *object, Position intersection_position) {
                 2.0*q[1]*y + q[3]*x + q[5]*z + q[7],
                 2.0*q[2]*z + q[4]*x + q[5]*y + q[8]
             };
-            double length = hypot(hypot(gradient.x, gradient.y), gradient.z);
-            if (!isfinite(length) || length <= 1e-12) return normal;
+            double length = sqrt(gradient.x*gradient.x + gradient.y*gradient.y + gradient.z*gradient.z);
+            if (!finite_number(length) || length <= 1e-12) return normal;
             return (Position){gradient.x/length, gradient.y/length,
                               gradient.z/length};
         }
@@ -847,7 +934,7 @@ static Color de_que_color_internal(Position eye, Position ray, Config config,
         
         // Orient the polygon normal towards the observer.
 	if ((Q->type == POLYGON || Q->type == DISK || Q->type == ELLIPSE ||
-	     Q->type == QUADRIC || Q->type == CYLINDER) &&
+	     Q->type == QUADRIC || Q->type == CYLINDER || Q->type == CONE) &&
             dot_product(normal, ray) > 0.0) {
 	    normal.x = -normal.x;
 	    normal.y = -normal.y;
@@ -1020,6 +1107,11 @@ static Intersection *first_intersection_excluding(Position eye, Position ray,
                 tmin = t;
                 closest = current;
             }
+        } else if (current->type == CONE) {
+            if (intersect_cone(eye, ray, current, &t) && t < tmin) {
+                tmin = t;
+                closest = current;
+            }
         }
         current = current->next;
     }
@@ -1071,7 +1163,7 @@ int intersect_sphere(Position eye, Position ray, Object *object, double *t) {
     double candidates[2] = {t1, t2};
     for (int i = 0; i < 2; i++) {
         double candidate = candidates[i];
-        if (candidate <= EPSILON || !isfinite(candidate)) continue;
+        if (candidate <= EPSILON || !finite_number(candidate)) continue;
         Position point = {eye.x + candidate*ray.x, eye.y + candidate*ray.y,
                           eye.z + candidate*ray.z};
         if (point_passes_cut_planes(object, point)) {
@@ -1096,7 +1188,7 @@ int intersect_disk(Position eye, Position ray, Object *object, double *t) {
 
     double candidate = -(dot(disk->normal, eye) + disk->plane_d)/denom;
 
-    if (!isfinite(candidate) || candidate <= EPSILON)
+    if (!finite_number(candidate) || candidate <= EPSILON)
         return 0;
 
     // Intersection point with plane
@@ -1133,7 +1225,7 @@ int intersect_ellipse(Position eye, Position ray, Object *object, double *t) {
         return 0;
 
     double candidate = -(dot(ellipse->normal, eye) + ellipse->plane_d)/denom;
-    if (!isfinite(candidate) || candidate <= EPSILON)
+    if (!finite_number(candidate) || candidate <= EPSILON)
         return 0;
 
     // Intersection point with plane
@@ -1153,7 +1245,7 @@ int intersect_ellipse(Position eye, Position ray, Object *object, double *t) {
     double d2 = sqrt(dot(delta2, delta2));
 
     // Is the point inside the ellipse?
-    if (!isfinite(d1 + d2) || d1 + d2 > ellipse->R)
+    if (!finite_number(d1 + d2) || d1 + d2 > ellipse->R)
         return 0;
     *t = candidate;
     return 1;
@@ -1176,7 +1268,7 @@ int intersect_quadric(Position eye, Position ray, Object *object, double *t) {
     double c = q[0]*x*x + q[1]*y*y + q[2]*z*z + q[3]*x*y +
                q[4]*x*z + q[5]*y*z + q[6]*x + q[7]*y + q[8]*z + q[9];
 
-    if (!isfinite(a) || !isfinite(b) || !isfinite(c)) return 0;
+    if (!finite_number(a) || !finite_number(b) || !finite_number(c)) return 0;
     double candidates[2];
     int candidate_count = 0;
     if (a == 0.0) {
@@ -1184,7 +1276,7 @@ int intersect_quadric(Position eye, Position ray, Object *object, double *t) {
         candidates[candidate_count++] = -c / b;
     } else {
         double discriminant = b*b - 4.0*a*c;
-        if (!isfinite(discriminant) || discriminant < 0.0) return 0;
+        if (!finite_number(discriminant) || discriminant < 0.0) return 0;
         double root = sqrt(discriminant);
         double qroot = -0.5 * (b + copysign(root, b));
         if (qroot == 0.0) {
@@ -1202,7 +1294,7 @@ int intersect_quadric(Position eye, Position ray, Object *object, double *t) {
 
     for (int i = 0; i < candidate_count; i++) {
         double candidate = candidates[i];
-        if (!isfinite(candidate) || candidate <= EPSILON) continue;
+        if (!finite_number(candidate) || candidate <= EPSILON) continue;
         Position point = {eye.x + candidate*ray.x, eye.y + candidate*ray.y,
                           eye.z + candidate*ray.z};
         if (point_passes_cut_planes(object, point)) {
@@ -1233,11 +1325,11 @@ int intersect_cylinder(Position eye, Position ray, Object *object, double *t) {
     double a = dot(direction_perp, direction_perp);
     double b = 2.0 * dot(origin_perp, direction_perp);
     double c = dot(origin_perp, origin_perp) - cylinder->radius * cylinder->radius;
-    if (!isfinite(a) || !isfinite(b) || !isfinite(c) || a <= 1e-14)
+    if (!finite_number(a) || !finite_number(b) || !finite_number(c) || a <= 1e-14)
         return 0; // A ray parallel to the axis does not cross the side surface.
 
     double discriminant = b * b - 4.0 * a * c;
-    if (!isfinite(discriminant) || discriminant < 0.0) return 0;
+    if (!finite_number(discriminant) || discriminant < 0.0) return 0;
     double root = sqrt(discriminant);
     double qroot = -0.5 * (b + copysign(root, b));
     double candidates[2];
@@ -1258,13 +1350,83 @@ int intersect_cylinder(Position eye, Position ray, Object *object, double *t) {
 
     for (int i = 0; i < candidate_count; i++) {
         double candidate = candidates[i];
-        if (!isfinite(candidate) || candidate <= EPSILON) continue;
+        if (!finite_number(candidate) || candidate <= EPSILON) continue;
         Position point = {eye.x + candidate * ray.x,
                           eye.y + candidate * ray.y,
                           eye.z + candidate * ray.z};
         Position from_anchor = subtract(point, object->position);
         double d = dot(from_anchor, cylinder->axis);
         if (d < cylinder->min_d - EPSILON || d > cylinder->max_d + EPSILON ||
+            !point_passes_cut_planes(object, point)) continue;
+        *t = candidate;
+        return 1;
+    }
+    return 0;
+}
+
+int intersect_cone(Position eye, Position ray, Object *object, double *t) {
+    if (!object || object->type != CONE || !object->data || !t) return 0;
+    const Cone *cone = object->data;
+    Position offset = subtract(eye, object->position);
+    double origin_axis = dot(offset, cone->axis);
+    double direction_axis = dot(ray, cone->axis);
+    Position origin_perp = {
+        offset.x - origin_axis * cone->axis.x,
+        offset.y - origin_axis * cone->axis.y,
+        offset.z - origin_axis * cone->axis.z
+    };
+    Position direction_perp = {
+        ray.x - direction_axis * cone->axis.x,
+        ray.y - direction_axis * cone->axis.y,
+        ray.z - direction_axis * cone->axis.z
+    };
+
+    double slope = cone->reference_radius / cone->reference_distance;
+    double slope_squared = slope * slope;
+    double a = dot(direction_perp, direction_perp) -
+               slope_squared * direction_axis * direction_axis;
+    double b = 2.0 * (dot(origin_perp, direction_perp) -
+                      slope_squared * origin_axis * direction_axis);
+    double c = dot(origin_perp, origin_perp) -
+               slope_squared * origin_axis * origin_axis;
+    if (!finite_number(a) || !finite_number(b) || !finite_number(c) ||
+        !finite_number(slope_squared)) return 0;
+
+    double candidates[2];
+    int candidate_count;
+    if (fabs(a) <= 1e-14) {
+        if (fabs(b) <= 1e-14) return 0;
+        candidates[0] = -c / b;
+        candidate_count = 1;
+    } else {
+        double discriminant = b * b - 4.0 * a * c;
+        if (!finite_number(discriminant) || discriminant < 0.0) return 0;
+        double root = sqrt(discriminant);
+        double qroot = -0.5 * (b + copysign(root, b));
+        if (qroot == 0.0) {
+            candidates[0] = -b / (2.0 * a);
+            candidate_count = 1;
+        } else {
+            candidates[0] = qroot / a;
+            candidates[1] = c / qroot;
+            if (candidates[0] > candidates[1]) {
+                double swap = candidates[0];
+                candidates[0] = candidates[1];
+                candidates[1] = swap;
+            }
+            candidate_count = 2;
+        }
+    }
+
+    for (int i = 0; i < candidate_count; i++) {
+        double candidate = candidates[i];
+        if (!finite_number(candidate) || candidate <= EPSILON) continue;
+        Position point = {eye.x + candidate * ray.x,
+                          eye.y + candidate * ray.y,
+                          eye.z + candidate * ray.z};
+        Position from_tip = subtract(point, object->position);
+        double d = dot(from_tip, cone->axis);
+        if (d < cone->min_d - EPSILON || d > cone->max_d + EPSILON ||
             !point_passes_cut_planes(object, point)) continue;
         *t = candidate;
         return 1;

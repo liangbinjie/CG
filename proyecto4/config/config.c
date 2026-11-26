@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,10 @@
 #include "config.h"
 #include "../object/object.h"
 #include "../utils/avs.h"
+
+static int finite_number(double value) {
+    return value == value && value <= DBL_MAX && value >= -DBL_MAX;
+}
 
 static char *copy_string(const char *text) {
     size_t length = strlen(text) + 1;
@@ -26,14 +31,14 @@ static int parse_cut_plane(const char *line, CutPlane **planes, int *count) {
     while (isspace((unsigned char)*end)) end++;
     if (*end != '\0' && *end != '#') return -1;
 
-    double length = hypot(hypot(plane.a, plane.b), plane.c);
-    if (!isfinite(length) || length == 0.0 || !isfinite(plane.d))
+    double length = sqrt(plane.a*plane.a + plane.b*plane.b + plane.c*plane.c);
+    if (!finite_number(length) || length == 0.0 || !finite_number(plane.d))
         return -1;
     plane.a /= length;
     plane.b /= length;
     plane.c /= length;
     plane.d /= length;
-    if (!isfinite(plane.d)) return -1;
+    if (!finite_number(plane.d)) return -1;
 
     for (int i = 0; i < *count; i++)
         if ((*planes)[i].id == plane.id) return -1;
