@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "../object/object.h"
+#include "../utils/avs.h"
 
 static char *copy_string(const char *text) {
     size_t length = strlen(text) + 1;
@@ -113,6 +114,10 @@ static void release_config_data(Config *config, CutPlane *planes,
     free(planes);
     free_objects(config->objects);
     config->objects = NULL;
+    for (int i = 0; i < config->texture_count; i++) free_texture(&config->textures[i]);
+    free(config->textures);
+    config->textures = NULL;
+    config->texture_count = 0;
     release_pending_objects(object_lines, object_count);
 }
 
@@ -121,6 +126,8 @@ int load_config(Config *config) {
     config->objects = NULL;
     config->lights = NULL;
     config->light_count = 0;
+    config->textures = NULL;
+    config->texture_count = 0;
 
     double background_alpha = 1.0;
     CutPlane *cut_planes = NULL;
@@ -210,6 +217,31 @@ int load_config(Config *config) {
         }
         config->objects->cut_planes = resolved;
         config->objects->cut_plane_count = resolved_count;
+    }
+
+    // Load textures for polygons
+    for (Object *object = config->objects; object; object = object->next) {
+        if (object->type != POLYGON || !object->data) continue;
+        int id = ((Polygon *)object->data)->texture_id;
+        if (id <= 0) continue;
+        int already_loaded = 0;
+        for (int i = 0; i < config->texture_count; i++)
+            if (config->textures[i].id == id) { already_loaded = 1; break; }
+        if (already_loaded) continue;
+
+        char filename[64];
+        int length = snprintf(filename, sizeof(filename), "textures/%d.avs", id);
+        if (length < 0 || (size_t)length >= sizeof(filename)) goto fail;
+        Texture texture;
+        if (load_texture_avs(filename, id, &texture) != 0) {
+            fprintf(stderr, "ERROR: Failed to load texture '%s'.\n", filename);
+            goto fail;
+        }
+        Texture *resized = realloc(config->textures,
+            (size_t)(config->texture_count + 1) * sizeof(*config->textures));
+        if (!resized) { free_texture(&texture); goto fail; }
+        config->textures = resized;
+        config->textures[config->texture_count++] = texture;
     }
 
     free(cut_planes);

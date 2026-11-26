@@ -15,6 +15,17 @@ typedef struct {
 } Color;
 
 typedef struct {
+    uint8_t a, r, g, b;
+} TexturePixel;
+
+typedef struct {
+    int id;
+    int width;
+    int height;
+    TexturePixel *pixels;
+} Texture;
+
+typedef struct {
     int xmin;
     int ymin;
     int xmax;
@@ -68,6 +79,8 @@ typedef struct {
 
     // Linked List of Objects
     Object *objects;
+    Texture *textures;
+    int texture_count;
 } Config;
 
 int load_config(Config *config);

@@ -4,6 +4,54 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
+#include <string.h>
+
+static int read_uint32_be(FILE *file, uint32_t *value) {
+    unsigned char bytes[4];
+    if (fread(bytes, 1, sizeof(bytes), file) != sizeof(bytes)) return -1;
+    *value = ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16) |
+             ((uint32_t)bytes[2] << 8) | (uint32_t)bytes[3];
+    return 0;
+}
+
+int load_texture_avs(const char *filename, int id, Texture *texture) {
+    if (!filename || !texture || id <= 0) return -1;
+    memset(texture, 0, sizeof(*texture));
+    FILE *file = fopen(filename, "rb");
+    if (!file) return -1;
+    uint32_t width, height;
+    if (read_uint32_be(file, &width) || read_uint32_be(file, &height) ||
+        width == 0 || height == 0 || width > INT_MAX || height > INT_MAX ||
+        (size_t)width > SIZE_MAX / (size_t)height / sizeof(TexturePixel)) {
+        fclose(file);
+        return -1;
+    }
+    size_t count = (size_t)width * (size_t)height;
+    TexturePixel *pixels = malloc(count * sizeof(*pixels));
+    if (!pixels) { fclose(file); return -1; }
+    for (size_t i = 0; i < count; i++) {
+        unsigned char rgba[4];
+        if (fread(rgba, 1, sizeof(rgba), file) != sizeof(rgba)) {
+            free(pixels); fclose(file); return -1;
+        }
+        pixels[i] = (TexturePixel){rgba[0], rgba[1], rgba[2], rgba[3]};
+    }
+    if (fclose(file) != 0) { free(pixels); return -1; }
+    texture->id = id;
+    texture->width = (int)width;
+    texture->height = (int)height;
+    texture->pixels = pixels;
+    return 0;
+}
+
+void free_texture(Texture *texture) {
+    if (!texture) return;
+    free(texture->pixels);
+    memset(texture, 0, sizeof(*texture));
+}
 
 static int write_uint32_be(FILE *file, unsigned int value) {
     unsigned char bytes[4];

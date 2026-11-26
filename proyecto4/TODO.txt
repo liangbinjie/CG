@@ -7,7 +7,7 @@
 - Planos de corte ✅
 - Transparencia no refrectiva
 - Superficies cuadraticas ✅
-- Texturas en Poligonos
+- Texturas en Poligonos ✅
 - Texturas en Cilindros
 - Texturas en Esferas
 
@@ -21,5 +21,10 @@ object=ellipse F1x F1y F1z F2x F2y F2z A R G B K Nx Ny Nz kd ka ks kn o1 o2
 cut_plane=ID A B C D
 object=<geometria existente> ... cut_planes=N ID1 ... IDN
 object=quadric X Y Z alpha R G B kd ka ks kn o1 o2 A B C D E F G H I J [cut_planes=N ID1 ... IDN]
+
+Texturas AVS para polígonos:
+Coloque cada archivo como textures/ID.avs. Agregue el ID al final de la línea
+del polígono, después de Ks Kn O1 O2; use ID 0 (o no lo agregue) para el
+color RGBA del polígono. Los IDs positivos se cargan al iniciar la escena.
 
 NOTA: Un obj sin reflexion, lleva o1=1.0 y o2=0.0

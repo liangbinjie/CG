@@ -61,7 +61,7 @@ static int parse_polygon(const char *line, Object **objects) {
         return -1;
     cursor += used;
     size_t value_count = 0;
-    size_t value_capacity = (size_t)n * 3 + 4;
+    size_t value_capacity = (size_t)n * 3 + 5;
     double *values = malloc(value_capacity * sizeof(*values));
     if (!values) return -1;
     while (value_count < value_capacity) {
@@ -79,18 +79,37 @@ static int parse_polygon(const char *line, Object **objects) {
         cursor = end;
     }
     if (value_count != (size_t)n * 3 &&
+        value_count != (size_t)n * 3 + 1 &&
         value_count != (size_t)n * 3 + 2 &&
-        value_count != (size_t)n * 3 + 4) {
+        value_count != (size_t)n * 3 + 3 &&
+        value_count != (size_t)n * 3 + 4 &&
+        value_count != (size_t)n * 3 + 5) {
         free(values);
         return -1;
     }
-    if (value_count >= (size_t)n * 3 + 2) {
+    size_t extra = value_count - (size_t)n * 3;
+    int texture_id = 0;
+    if (extra == 1) {
+        double raw_id = values[n * 3];
+        if (!isfinite(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
+            free(values); return -1;
+        }
+        texture_id = (int)raw_id;
+    }
+    if (extra >= 2) {
         ks = values[n * 3];
         kn = values[n * 3 + 1];
     }
-    if (value_count == (size_t)n * 3 + 4) {
+    if (extra == 4 || extra == 5) {
         o1 = values[n * 3 + 2];
         o2 = values[n * 3 + 3];
+    }
+    if (extra == 3 || extra == 5) {
+        double raw_id = values[n * 3 + extra - 1];
+        if (!isfinite(raw_id) || raw_id < 0 || raw_id > INT_MAX || raw_id != floor(raw_id)) {
+            free(values); return -1;
+        }
+        texture_id = (int)raw_id;
     }
     if (ks < 0.0 || ks > 1.0 || kn < 1.0 || kn != floor(kn) || !valid_mirror(o1, o2)) {
         free(values);
@@ -102,6 +121,7 @@ static int parse_polygon(const char *line, Object **objects) {
         return -1;
     }
     polygon->vertex_count = n;
+    polygon->texture_id = texture_id;
     polygon->vertices3d = calloc((size_t)n, sizeof(Position));
     polygon->vertices2d = calloc((size_t)n, sizeof(Vertex2D));
     if (!polygon->vertices3d || !polygon->vertices2d) goto fail;
@@ -745,10 +765,46 @@ Color de_que_color(Position eye, Position ray, Config config, int depth) {
         if (intensity > 1.0) intensity = 1.0;
         if (intensity < 0.0) intensity = 0.0;
 
-        color.a = Q->color.a;
-        color.r = Q->color.r * (long double)intensity;
-        color.g = Q->color.g * (long double)intensity;
-        color.b = Q->color.b * (long double)intensity;
+        Color base_color = Q->color;
+        if (Q->type == POLYGON && Q->data) {
+            const Polygon *polygon = Q->data;
+            if (polygon->texture_id > 0) {
+                const Texture *texture = NULL;
+                for (int i = 0; i < config.texture_count; i++)
+                    if (config.textures[i].id == polygon->texture_id) {
+                        texture = &config.textures[i]; break;
+                    }
+                if (texture && texture->pixels && texture->width > 0 && texture->height > 0) {
+                    double min_u = polygon->vertices2d[0].u, max_u = min_u;
+                    double min_v = polygon->vertices2d[0].v, max_v = min_v;
+                    Vertex2D point = project(intersection->position, polygon->dropped_axis);
+                    for (int i = 1; i < polygon->vertex_count; i++) {
+                        Vertex2D vertex = polygon->vertices2d[i];
+                        if (vertex.u < min_u) min_u = vertex.u;
+                        if (vertex.u > max_u) max_u = vertex.u;
+                        if (vertex.v < min_v) min_v = vertex.v;
+                        if (vertex.v > max_v) max_v = vertex.v;
+                    }
+                    double span_u = max_u - min_u, span_v = max_v - min_v;
+                    if (span_u > 0 && span_v > 0) {
+                        double u = (point.u - min_u) / span_u;
+                        double v = (point.v - min_v) / span_v;
+                        u -= floor(u); v -= floor(v);
+                        int tx = (int)floor(u * texture->width) % texture->width;
+                        int ty = (int)floor(v * texture->height) % texture->height;
+                        TexturePixel pixel = texture->pixels[(size_t)ty * texture->width + tx];
+                        base_color.a = pixel.a;
+                        base_color.r = pixel.r / 255.0L;
+                        base_color.g = pixel.g / 255.0L;
+                        base_color.b = pixel.b / 255.0L;
+                    }
+                }
+            }
+        }
+        color.a = base_color.a;
+        color.r = base_color.r * (long double)intensity;
+        color.g = base_color.g * (long double)intensity;
+        color.b = base_color.b * (long double)intensity;
         
         // Mirror reflection
 	if (depth > 0 && Q->o2 > 0.0) {

@@ -12,7 +12,7 @@ main.o: main.c utils/avs.h config/config.h object/object.h
 utils/avs.o: utils/avs.c utils/avs.h config/config.h
 	$(CC) $(CFLAGS) -c utils/avs.c -o utils/avs.o
 
-config/config.o: config/config.c config/config.h object/object.h
+config/config.o: config/config.c config/config.h object/object.h utils/avs.h
 	$(CC) $(CFLAGS) -c config/config.c -o config/config.o
 
 object/object.o: object/object.c object/object.h config/config.h

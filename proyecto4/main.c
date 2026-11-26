@@ -148,6 +148,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "ERROR: Failed to save AVS file.\n");
         free_buffer(framebuffer, config);
         free_objects(config.objects);
+        for (int i = 0; i < config.texture_count; i++) free_texture(&config.textures[i]);
+        free(config.textures);
         return 1;
     }
 
@@ -155,12 +157,16 @@ int main(int argc, char **argv) {
         fprintf(stderr, "ERROR: Could not display AVS with ImageMagick.\n");
         free_buffer(framebuffer, config);
         free_objects(config.objects);
+        for (int i = 0; i < config.texture_count; i++) free_texture(&config.textures[i]);
+        free(config.textures);
         return 1;
     }
     
     free_buffer(framebuffer, config);
     
     free_objects(config.objects);
+    for (int i = 0; i < config.texture_count; i++) free_texture(&config.textures[i]);
+    free(config.textures);
 
     return 0;
 }
