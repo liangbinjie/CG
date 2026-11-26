@@ -5,7 +5,7 @@
 - Cilindros
 - Conos
 - Planos de corte ✅
-- Transparencia no refrectiva
+- Transparencia no refractiva ✅
 - Superficies cuadraticas ✅
 - Texturas en Poligonos ✅
 - Texturas en Cilindros
@@ -14,17 +14,21 @@
 
 **** Nuevos formatos ****
 
-object=sphere X Y Z A R G B RADIO Kd Ka Ks Kn O1 O2
-object=polygon N A R G B Kd Ka X1 Y1 Z1 ... Xn Yn Zn Ks Kn O1 O2
-object=disk X Y Z A R G B outer_radius inner_radius NX NY NZ kd ka ks kn o1 o2
-object=ellipse F1x F1y F1z F2x F2y F2z A R G B K Nx Ny Nz kd ka ks kn o1 o2
+object=sphere X Y Z A R G B RADIO Kd Ka Ks Kn O1 O2 O3
+object=polygon N A R G B Kd Ka X1 Y1 Z1 ... Xn Yn Zn Ks Kn O1 O2 O3 texture_id
+object=disk X Y Z A R G B outer_radius inner_radius NX NY NZ kd ka ks kn o1 o2 o3
+object=ellipse F1x F1y F1z F2x F2y F2z A R G B K Nx Ny Nz kd ka ks kn o1 o2 o3
 cut_plane=ID A B C D
 object=<geometria existente> ... cut_planes=N ID1 ... IDN
-object=quadric X Y Z alpha R G B kd ka ks kn o1 o2 A B C D E F G H I J [cut_planes=N ID1 ... IDN]
+object=quadric X Y Z alpha R G B kd ka ks kn o1 o2 o3 A B C D E F G H I J [cut_planes=N ID1 ... IDN]
 
 Texturas AVS para polígonos:
-Coloque cada archivo como textures/ID.avs. Agregue el ID al final de la línea
-del polígono, después de Ks Kn O1 O2; use ID 0 (o no lo agregue) para el
-color RGBA del polígono. Los IDs positivos se cargan al iniciar la escena.
+Coloque cada archivo como textures/ID.avs. El ID sigue a O2 si se omite O3;
+si se especifica O3, use el orden O1 O2 O3 texture_id. Use ID 0 para indicar
+que el polígono conserva su color RGBA aunque se especifique O3. Los IDs
+positivos se cargan al iniciar la escena.
 
-NOTA: Un obj sin reflexion, lleva o1=1.0 y o2=0.0
+O1, O2 y O3 son los pesos del color propio, reflejado y transmitido; deben sumar 1.
+Los formatos anteriores pueden omitir O3, cuyo valor por defecto es 0. La
+transparencia sigue el rayo en línea recta, ignorando el objeto transparente,
+hacia el siguiente objeto o el fondo; no aplica refracción.

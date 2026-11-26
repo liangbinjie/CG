@@ -121,8 +121,8 @@ static void release_config_data(Config *config, CutPlane *planes,
     release_pending_objects(object_lines, object_count);
 }
 
-int load_config(Config *config) {
-    if (!config) return 1;
+int load_config_from_file(Config *config, const char *filename) {
+    if (!config || !filename) return 1;
     config->objects = NULL;
     config->lights = NULL;
     config->light_count = 0;
@@ -134,7 +134,7 @@ int load_config(Config *config) {
     int cut_plane_count = 0;
     char **object_lines = NULL;
     int object_count = 0;
-    FILE *file = fopen(CONFIG_FILE, "r");
+    FILE *file = fopen(filename, "r");
     char line[4096];
     if (!file) return 1;
 
@@ -252,4 +252,8 @@ fail:
     if (file) fclose(file);
     release_config_data(config, cut_planes, object_lines, object_count);
     return 1;
+}
+
+int load_config(Config *config) {
+    return load_config_from_file(config, CONFIG_FILE);
 }

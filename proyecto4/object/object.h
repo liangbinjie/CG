@@ -79,6 +79,7 @@ struct Object {
     void *data; // pointer to object-specific data (e.g., radius for sphere)
     double o1; // Original color
     double o2; // Reflected color
+    double o3; // Transmitted color
     CutPlane *cut_planes;
     int cut_plane_count;
     struct Object *next; // pointer to the next object in the linked list
@@ -88,7 +89,8 @@ struct Object {
 
 int parse_sphere(const char *line, Position *position, Color *color, double *radius,
                  double *reflection_coefficient, double *ambient_coefficient,
-                 double *specular_coefficient, int *shininess, double *o1, double *o2);
+                 double *specular_coefficient, int *shininess, double *o1,
+                 double *o2, double *o3);
 
 Object *create_object(ObjectType type, Position position, Color color, void *data);
 Object *add_object(Object *head, Object *new_object);

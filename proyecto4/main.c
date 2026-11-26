@@ -7,7 +7,7 @@
 
 static const int MAX_RECURSION = 5;
 static const long double MAX_COLOR_DISTANCE = 1.7320508075688772935L;
-static const int ANTIALIASING_ENABLED = 1;
+static const int ANTIALIASING_ENABLED = 0;
 
 Color **create_buffer(Config config) {
     Color **framebuffer = (Color **)malloc(config.height * sizeof(Color *));
@@ -133,7 +133,8 @@ int main(int argc, char **argv) {
     Color **framebuffer;
     char avs_filename[sizeof(config.output_name) + 5];
 
-    if (load_config(&config) != 0) {
+    const char *config_filename = argc > 1 ? argv[1] : CONFIG_FILE;
+    if (load_config_from_file(&config, config_filename) != 0) {
         fprintf(stderr, "ERROR: Failed to load config file.\n");
         return 1;
     }

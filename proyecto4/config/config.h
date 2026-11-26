@@ -84,5 +84,6 @@ typedef struct {
 } Config;
 
 int load_config(Config *config);
+int load_config_from_file(Config *config, const char *filename);
 
 #endif // CONFIG_H
