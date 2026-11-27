@@ -78,6 +78,7 @@ static int parse_polygon(const char *line, Object **objects) {
     long double red, green, blue;
     double kd, ka, ks = 0.0, kn = 32.0;
     double o1 = 1.0, o2 = 0.0, o3 = 0.0;
+    int receives_shadows = 1;
     const char *cursor = line;
     if (sscanf(cursor, "polygon %d %lf %Lf %Lf %Lf %lf %lf %n",
                &n, &alpha, &red, &green, &blue, &kd, &ka, &used) != 7 ||
@@ -96,13 +97,19 @@ static int parse_polygon(const char *line, Object **objects) {
         while (isspace((unsigned char)*cursor)) cursor++;
         if (*cursor == '\0' || *cursor == '#') break;
         value = strtod(cursor, &end);
-        if (end == cursor) {
-            free(values);
-            values = NULL;
-            return -1;
-        }
+        if (end == cursor) break;
         values[value_count++] = value;
         cursor = end;
+    }
+    while (isspace((unsigned char)*cursor)) cursor++;
+    if (strncmp(cursor, "receives_shadows=0", 18) == 0) {
+        receives_shadows = 0;
+        cursor += 18;
+        while (isspace((unsigned char)*cursor)) cursor++;
+    }
+    if (*cursor != '\0' && *cursor != '#') {
+        free(values);
+        return -1;
     }
     if (value_count != (size_t)n * 3 &&
         value_count != (size_t)n * 3 + 1 &&
@@ -200,6 +207,7 @@ static int parse_polygon(const char *line, Object **objects) {
     o->o2 = o2;
     o->o3 = o3;
     o->texture_id = texture_id;
+    o->receives_shadows = receives_shadows;
     *objects = add_object(*objects, o);
     return 0;
 fail:
@@ -471,9 +479,21 @@ static int parse_ellipse(const char *line, Object **objects) {
 static int parse_quadric(const char *line, Object **objects) {
     double values[24];
     int count = 0;
+    const char *numeric_start = line + 7;
+    const char *cut_suffix = strstr(numeric_start, " cut_planes=");
+    size_t numeric_length = cut_suffix ? (size_t)(cut_suffix - numeric_start)
+                                       : strlen(numeric_start);
+    char *numeric_line = malloc(numeric_length + 1);
+    if (!numeric_line) return -1;
+    memcpy(numeric_line, numeric_start, numeric_length);
+    numeric_line[numeric_length] = '\0';
     if (!objects || strncmp(line, "quadric", 7) != 0 ||
-        parse_optional_values(line + 7, values, 24, &count) != 0 ||
-        (count != 23 && count != 24)) return -1;
+        parse_optional_values(numeric_line, values, 24, &count) != 0 ||
+        (count != 23 && count != 24)) {
+        free(numeric_line);
+        return -1;
+    }
+    free(numeric_line);
 
     Position position = {values[0], values[1], values[2]};
     double alpha = values[3];
@@ -731,6 +751,7 @@ Object *create_object(ObjectType type, Position position, Color color, void *dat
     new_object->o2 = 0.0;
     new_object->o3 = 0.0;
     new_object->texture_id = 0;
+    new_object->receives_shadows = 1;
     new_object->cut_planes = NULL;
     new_object->cut_plane_count = 0;
     new_object->next = NULL;
@@ -1109,10 +1130,13 @@ static Color de_que_color_internal(Position eye, Position ray, Config config,
                 double dz = config.lights[k].position.z - intersection->position.z;
                 double light_distance = sqrt(dx * dx + dy * dy + dz * dz);
                 
-                // Verifies if there is an obstacle's intersection
-                Intersection *obstacle = first_intersection(intersection->position, l_vector, config);
-                
-                if (!obstacle || obstacle->t >= light_distance) {
+                // Check whether another object blocks direct light unless
+                // this surface is configured to ignore cast shadows.
+                Intersection *obstacle = NULL;
+                if (Q->receives_shadows)
+                    obstacle = first_intersection(intersection->position, l_vector, config);
+
+                if (!Q->receives_shadows || !obstacle || obstacle->t >= light_distance) {
                     double fatt = get_attenuation_factor(config.lights[k], intersection->position);
                     intensity += cross_product_LN * Q->reflection_coefficient * fatt * config.lights[k].light_intensity;
                     if (reflected_view > 0.0) {

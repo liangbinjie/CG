@@ -219,6 +219,11 @@ object=cylinder 320 100 150 0 1 0 85 0 260 1.0 0.9 0.3 0.1 0.8 0.4 cut_planes=1 
 
 The object references the plane by ID, not by repeating its coefficients.
 
+Polygons receive cast shadows by default. To keep a surface lit without
+receiving shadows from other objects, append `receives_shadows=0` to its
+object line. This does not change the shadows that the object casts onto other
+surfaces.
+
 ## Lights
 
 Add one line per point light:

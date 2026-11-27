@@ -97,6 +97,7 @@ struct Object {
     double o2; // Reflected color
     double o3; // Transmitted color
     int texture_id; // 0 uses the object's solid color
+    int receives_shadows; // Whether other objects can block its direct light
     CutPlane *cut_planes;
     int cut_plane_count;
     struct Object *next; // pointer to the next object in the linked list

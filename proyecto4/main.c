@@ -5,9 +5,9 @@
 #include <math.h>
 #include "utils/avs.h"
 
-static const int MAX_RECURSION = 5;
+static const int MAX_RECURSION = 6;
 static const long double MAX_COLOR_DISTANCE = 1.7320508075688772935L;
-static const int ANTIALIASING_ENABLED = 0;
+static const int ANTIALIASING_ENABLED = 1;
 
 Color **create_buffer(Config config) {
     Color **framebuffer = (Color **)malloc(config.height * sizeof(Color *));
@@ -61,7 +61,7 @@ static Color sample_ray(double x, double y, Config config) {
 // Corner order: (x0,y0), (x1,y0), (x0,y1), (x1,y1).
 static Color sampling(double x0, double y0, double x1, double y1, Color c1, Color c2, Color c3, Color c4, int depth, Config config) {
     Color colors[4] = {c1, c2, c3, c4};
-    if (depth >= MAX_RECURSION || max_color_distance(colors) <= 0.05L * MAX_COLOR_DISTANCE) {
+    if (depth >= MAX_RECURSION || max_color_distance(colors) <= 0.03L * MAX_COLOR_DISTANCE) {
         return average_colors(c1, c2, c3, c4);
     }
 
