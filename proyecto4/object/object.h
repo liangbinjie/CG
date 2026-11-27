@@ -46,7 +46,6 @@ typedef struct {
     Position normal;       // unit normal, fixed for the polygon
     double plane_d;       // normalized A*x+B*y+C*z+D=0
     int dropped_axis;     // 0:x, 1:y, 2:z
-    int texture_id;       // 0 uses the polygon's solid color
 } Polygon;
 
 /* Disk-specific data */
@@ -97,6 +96,7 @@ struct Object {
     double o1; // Original color
     double o2; // Reflected color
     double o3; // Transmitted color
+    int texture_id; // 0 uses the object's solid color
     CutPlane *cut_planes;
     int cut_plane_count;
     struct Object *next; // pointer to the next object in the linked list

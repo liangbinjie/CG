@@ -224,10 +224,9 @@ int load_config_from_file(Config *config, const char *filename) {
         config->objects->cut_plane_count = resolved_count;
     }
 
-    // Load textures for polygons
+    // Load textures referenced by scene objects.
     for (Object *object = config->objects; object; object = object->next) {
-        if (object->type != POLYGON || !object->data) continue;
-        int id = ((Polygon *)object->data)->texture_id;
+        int id = object->texture_id;
         if (id <= 0) continue;
         int already_loaded = 0;
         for (int i = 0; i < config->texture_count; i++)

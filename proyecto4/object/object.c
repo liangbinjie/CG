@@ -19,6 +19,13 @@ static int valid_mix(double o1, double o2, double o3) {
            o3 >= 0.0 && o3 <= 1.0 && fabs(o1 + o2 + o3 - 1.0) < 1e-9;
 }
 
+static int parse_texture_id(double value, int *texture_id) {
+    if (!finite_number(value) || value < 0.0 || value > INT_MAX ||
+        value != floor(value)) return -1;
+    *texture_id = (int)value;
+    return 0;
+}
+
 static int parse_optional_values(const char *cursor, double *values,
                                  int capacity, int *count) {
     *count = 0;
@@ -150,7 +157,6 @@ static int parse_polygon(const char *line, Object **objects) {
         return -1;
     }
     polygon->vertex_count = n;
-    polygon->texture_id = texture_id;
     polygon->vertices3d = calloc((size_t)n, sizeof(Position));
     polygon->vertices2d = calloc((size_t)n, sizeof(Vertex2D));
     if (!polygon->vertices3d || !polygon->vertices2d) goto fail;
@@ -193,6 +199,7 @@ static int parse_polygon(const char *line, Object **objects) {
     o->o1 = o1;
     o->o2 = o2;
     o->o3 = o3;
+    o->texture_id = texture_id;
     *objects = add_object(*objects, o);
     return 0;
 fail:
@@ -519,13 +526,15 @@ static int parse_quadric(const char *line, Object **objects) {
 
 /* Sphere and Object's parser */
 
-int parse_sphere(const char *line, Position *position, Color *color, double *radius,
-                 double *reflection_coefficient, double *ambient_coefficient,
-                 double *specular_coefficient, int *shininess, double *o1,
-                 double *o2, double *o3) {
+static int parse_sphere_with_texture(const char *line, Position *position,
+                 Color *color, double *radius, double *reflection_coefficient,
+                 double *ambient_coefficient, double *specular_coefficient,
+                 int *shininess, double *o1, double *o2, double *o3,
+                 int *texture_id) {
     int used;
     double alpha;
     double parsed_shininess = 32.0;
+    int parsed_texture_id = 0;
     *specular_coefficient = 0.0;
     *o1 = 1.0;
     *o2 = 0.0;
@@ -538,11 +547,17 @@ int parse_sphere(const char *line, Position *position, Color *color, double *rad
         return -1; 
     }
 
-    double optional[5];
+    double optional[6];
     int optional_count;
-    if (parse_optional_values(line + used, optional, 5, &optional_count) != 0 ||
-        (optional_count != 0 && optional_count != 2 &&
-         optional_count != 4 && optional_count != 5)) return -1;
+    if (parse_optional_values(line + used, optional, 6, &optional_count) != 0 ||
+        (optional_count != 0 && optional_count != 1 &&
+         optional_count != 2 && optional_count != 3 &&
+         optional_count != 4 && optional_count != 5 &&
+         optional_count != 6)) return -1;
+    if ((optional_count == 1 || optional_count == 3 ||
+         optional_count == 6) &&
+        (!texture_id || parse_texture_id(optional[optional_count - 1],
+                                          &parsed_texture_id) != 0)) return -1;
     if (optional_count >= 2) {
         *specular_coefficient = optional[0];
         parsed_shininess = optional[1];
@@ -551,7 +566,7 @@ int parse_sphere(const char *line, Position *position, Color *color, double *rad
         *o1 = optional[2];
         *o2 = optional[3];
     }
-    if (optional_count == 5) *o3 = optional[4];
+    if (optional_count == 5 || optional_count == 6) *o3 = optional[4];
     if (alpha < 0.0 || alpha > 1.0 ||
         color->r < 0.0 || color->r > 1.0 ||
         color->g < 0.0 || color->g > 1.0 ||
@@ -561,8 +576,18 @@ int parse_sphere(const char *line, Position *position, Color *color, double *rad
         parsed_shininess != floor(parsed_shininess) ||
         !valid_mix(*o1, *o2, *o3)) return -1;
     *shininess = (int)parsed_shininess;
+    if (texture_id) *texture_id = parsed_texture_id;
     color->a = (uint8_t)(alpha * 255.0);
     return 0; 
+}
+
+int parse_sphere(const char *line, Position *position, Color *color,
+                 double *radius, double *reflection_coefficient,
+                 double *ambient_coefficient, double *specular_coefficient,
+                 int *shininess, double *o1, double *o2, double *o3) {
+    return parse_sphere_with_texture(line, position, color, radius,
+        reflection_coefficient, ambient_coefficient, specular_coefficient,
+        shininess, o1, o2, o3, NULL);
 }
 
 static int parse_cylinder(const char *line, Object **objects) {
@@ -578,14 +603,21 @@ static int parse_cylinder(const char *line, Object **objects) {
         &color.r, &color.g, &color.b, &kd, &ka, &used) != 15 || !used)
         return -1;
 
-    double optional[5];
+    double optional[6];
     int optional_count;
-    if (parse_optional_values(line + used, optional, 5, &optional_count) != 0 ||
-        (optional_count != 0 && optional_count != 2 &&
-         optional_count != 4 && optional_count != 5)) return -1;
+    if (parse_optional_values(line + used, optional, 6, &optional_count) != 0 ||
+        (optional_count != 0 && optional_count != 1 &&
+         optional_count != 2 && optional_count != 3 &&
+         optional_count != 4 && optional_count != 5 &&
+         optional_count != 6)) return -1;
+    int texture_id = 0;
+    if ((optional_count == 1 || optional_count == 3 ||
+         optional_count == 6) &&
+        parse_texture_id(optional[optional_count - 1], &texture_id) != 0)
+        return -1;
     if (optional_count >= 2) { ks = optional[0]; kn = optional[1]; }
     if (optional_count >= 4) { o1 = optional[2]; o2 = optional[3]; }
-    if (optional_count == 5) o3 = optional[4];
+    if (optional_count == 5 || optional_count == 6) o3 = optional[4];
 
     double axis_length = sqrt(axis.x*axis.x + axis.y*axis.y + axis.z*axis.z);
     if (!finite_number(anchor.x) || !finite_number(anchor.y) || !finite_number(anchor.z) ||
@@ -619,6 +651,7 @@ static int parse_cylinder(const char *line, Object **objects) {
     object->o1 = o1;
     object->o2 = o2;
     object->o3 = o3;
+    object->texture_id = texture_id;
     *objects = add_object(*objects, object);
     return 0;
 }
@@ -697,6 +730,7 @@ Object *create_object(ObjectType type, Position position, Color color, void *dat
     new_object->o1 = 1.0;
     new_object->o2 = 0.0;
     new_object->o3 = 0.0;
+    new_object->texture_id = 0;
     new_object->cut_planes = NULL;
     new_object->cut_plane_count = 0;
     new_object->next = NULL;
@@ -725,11 +759,13 @@ int parse_object(const char *line, Object **objects) {
     double o1;
     double o2;
     double o3;
+    int texture_id;
 
     if (strncmp(line, "sphere", 6) == 0) {
-        if (parse_sphere(line, &position, &color, &radius,
+        if (parse_sphere_with_texture(line, &position, &color, &radius,
                          &reflection_coefficient, &ambient_coefficient,
-                         &specular_coefficient, &shininess, &o1, &o2, &o3) == 0) {
+                         &specular_coefficient, &shininess, &o1, &o2, &o3,
+                         &texture_id) == 0) {
             Sphere *sphere_data = (Sphere *)malloc(sizeof(Sphere));
             if (!sphere_data) {
                 return -1; // Memory allocation failed
@@ -748,6 +784,7 @@ int parse_object(const char *line, Object **objects) {
             new_object->o1 = o1;
             new_object->o2 = o2;
             new_object->o3 = o3;
+            new_object->texture_id = texture_id;
             *objects = add_object(*objects, new_object);
             return 0; 
         }
@@ -920,6 +957,118 @@ static Intersection *first_intersection_excluding(Position eye, Position ray,
                                                    Config config,
                                                    const Object *excluded);
 
+static const Texture *find_texture(const Config *config, int texture_id) {
+    for (int i = 0; i < config->texture_count; i++)
+        if (config->textures[i].id == texture_id) return &config->textures[i];
+    return NULL;
+}
+
+static TexturePixel sample_texture(const Texture *texture, double u, double v,
+                                   int wrap_v) {
+    u -= floor(u);
+    if (wrap_v) {
+        v -= floor(v);
+    } else {
+        if (v < 0.0) v = 0.0;
+        if (v > 1.0) v = 1.0;
+    }
+
+    int x = (int)floor(u * texture->width);
+    int y = (int)floor(v * texture->height);
+    if (x >= texture->width) x = texture->width - 1;
+    if (y >= texture->height) y = texture->height - 1;
+    return texture->pixels[(size_t)y * texture->width + x];
+}
+
+static int texture_coordinates(const Object *object, Position point,
+                               double *u, double *v, int *wrap_v) {
+    const double pi = acos(-1.0);
+    if (object->type == POLYGON && object->data) {
+        const Polygon *polygon = object->data;
+        double min_u = polygon->vertices2d[0].u;
+        double max_u = min_u;
+        double min_v = polygon->vertices2d[0].v;
+        double max_v = min_v;
+        Vertex2D projected = project(point, polygon->dropped_axis);
+        for (int i = 1; i < polygon->vertex_count; i++) {
+            Vertex2D vertex = polygon->vertices2d[i];
+            if (vertex.u < min_u) min_u = vertex.u;
+            if (vertex.u > max_u) max_u = vertex.u;
+            if (vertex.v < min_v) min_v = vertex.v;
+            if (vertex.v > max_v) max_v = vertex.v;
+        }
+        double span_u = max_u - min_u;
+        double span_v = max_v - min_v;
+        if (span_u <= 0.0 || span_v <= 0.0) return 0;
+        *u = (projected.u - min_u) / span_u;
+        *v = (projected.v - min_v) / span_v;
+        *wrap_v = 1;
+        return 1;
+    }
+
+    if (object->type == SPHERE && object->data) {
+        const Sphere *sphere = object->data;
+        if (!finite_number(sphere->radius) || sphere->radius <= 0.0) return 0;
+        Position normal = {
+            (point.x - object->position.x) / sphere->radius,
+            (point.y - object->position.y) / sphere->radius,
+            (point.z - object->position.z) / sphere->radius
+        };
+        *u = 0.5 + atan2(normal.z, normal.x) / (2.0 * pi);
+        *v = acos(fmax(-1.0, fmin(1.0, normal.y))) / pi;
+        *wrap_v = 0;
+        return 1;
+    }
+
+    if (object->type == CYLINDER && object->data) {
+        const Cylinder *cylinder = object->data;
+        double span = cylinder->max_d - cylinder->min_d;
+        if (!finite_number(span) || span <= 0.0) return 0;
+
+        Position offset = subtract(point, object->position);
+        double axial = dot(offset, cylinder->axis);
+        Position radial = {
+            offset.x - axial * cylinder->axis.x,
+            offset.y - axial * cylinder->axis.y,
+            offset.z - axial * cylinder->axis.z
+        };
+        Position reference = fabs(cylinder->axis.y) < 0.9
+            ? (Position){0.0, 1.0, 0.0}
+            : (Position){1.0, 0.0, 0.0};
+        Position tangent = cross(cylinder->axis, reference);
+        double tangent_length = sqrt(dot(tangent, tangent));
+        if (tangent_length <= 0.0) return 0;
+        tangent = (Position){tangent.x / tangent_length,
+                             tangent.y / tangent_length,
+                             tangent.z / tangent_length};
+        Position bitangent = cross(cylinder->axis, tangent);
+        *u = 0.5 + atan2(dot(radial, bitangent), dot(radial, tangent)) /
+                    (2.0 * pi);
+        *v = (axial - cylinder->min_d) / span;
+        *wrap_v = 0;
+        return 1;
+    }
+
+    return 0;
+}
+
+static void apply_object_texture(const Config *config, const Object *object,
+                                 Position point, Color *color) {
+    if (object->texture_id <= 0) return;
+    const Texture *texture = find_texture(config, object->texture_id);
+    if (!texture || !texture->pixels || texture->width <= 0 ||
+        texture->height <= 0) return;
+
+    double u, v;
+    int wrap_v;
+    if (!texture_coordinates(object, point, &u, &v, &wrap_v)) return;
+    TexturePixel pixel = sample_texture(texture, u, v, wrap_v);
+    color->a = pixel.a;
+    color->r = pixel.r / 255.0L;
+    color->g = pixel.g / 255.0L;
+    color->b = pixel.b / 255.0L;
+}
+
 static Color de_que_color_internal(Position eye, Position ray, Config config,
                                    int depth, const Object *excluded) {
     Color color;
@@ -981,41 +1130,7 @@ static Color de_que_color_internal(Position eye, Position ray, Config config,
         if (intensity < 0.0) intensity = 0.0;
 
         Color base_color = Q->color;
-        if (Q->type == POLYGON && Q->data) {
-            const Polygon *polygon = Q->data;
-            if (polygon->texture_id > 0) {
-                const Texture *texture = NULL;
-                for (int i = 0; i < config.texture_count; i++)
-                    if (config.textures[i].id == polygon->texture_id) {
-                        texture = &config.textures[i]; break;
-                    }
-                if (texture && texture->pixels && texture->width > 0 && texture->height > 0) {
-                    double min_u = polygon->vertices2d[0].u, max_u = min_u;
-                    double min_v = polygon->vertices2d[0].v, max_v = min_v;
-                    Vertex2D point = project(intersection->position, polygon->dropped_axis);
-                    for (int i = 1; i < polygon->vertex_count; i++) {
-                        Vertex2D vertex = polygon->vertices2d[i];
-                        if (vertex.u < min_u) min_u = vertex.u;
-                        if (vertex.u > max_u) max_u = vertex.u;
-                        if (vertex.v < min_v) min_v = vertex.v;
-                        if (vertex.v > max_v) max_v = vertex.v;
-                    }
-                    double span_u = max_u - min_u, span_v = max_v - min_v;
-                    if (span_u > 0 && span_v > 0) {
-                        double u = (point.u - min_u) / span_u;
-                        double v = (point.v - min_v) / span_v;
-                        u -= floor(u); v -= floor(v);
-                        int tx = (int)floor(u * texture->width) % texture->width;
-                        int ty = (int)floor(v * texture->height) % texture->height;
-                        TexturePixel pixel = texture->pixels[(size_t)ty * texture->width + tx];
-                        base_color.a = pixel.a;
-                        base_color.r = pixel.r / 255.0L;
-                        base_color.g = pixel.g / 255.0L;
-                        base_color.b = pixel.b / 255.0L;
-                    }
-                }
-            }
-        }
+        apply_object_texture(&config, Q, intersection->position, &base_color);
         color.a = base_color.a;
         color.r = base_color.r * (long double)intensity;
         color.g = base_color.g * (long double)intensity;

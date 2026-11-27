@@ -144,7 +144,7 @@ normalized by the program.
 ### Cylinder
 
 ```cfg
-object=cylinder X0 Y0 Z0 Qx Qy Qz radius B F alpha R G B kd ka [ks kn [o1 o2 [o3]]] [cut_planes=N ID1 ... IDN]
+object=cylinder X0 Y0 Z0 Qx Qy Qz radius B F alpha R G B kd ka [ks kn [o1 o2 [o3]]] [texture_id] [cut_planes=N ID1 ... IDN]
 ```
 
 `(X0,Y0,Z0)` is the anchor, `(Qx,Qy,Qz)` is the axis direction (normalized by
@@ -239,7 +239,8 @@ light=150 100 -250 1.0 1.0 0.0003 0.000001
 
 ## Textures
 
-Polygon texture files use the AVS format and are loaded when the scene starts.
+Polygon, sphere, and cylinder texture files use the AVS format and are loaded
+when the scene starts.
 For texture ID `2`, place the file at `textures/2.avs`; in general the path is
 `textures/<ID>.avs`. The AVS file contains a big-endian 32-bit width, a
 big-endian 32-bit height, then four bytes per pixel in alpha, red, green, blue

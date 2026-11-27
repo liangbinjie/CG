@@ -8,27 +8,30 @@
 - Transparencia no refractiva ✅
 - Superficies cuadraticas ✅
 - Texturas en Poligonos ✅
-- Texturas en Cilindros
-- Texturas en Esferas
+- Texturas en Cilindros ✅
+- Texturas en Esferas ✅
 
 
 **** Nuevos formatos ****
 
-object=sphere X Y Z A R G B RADIO Kd Ka Ks Kn O1 O2 O3
+object=sphere X Y Z A R G B RADIO Kd Ka [Ks Kn [O1 O2 [O3]]] [texture_id]
 object=polygon N A R G B Kd Ka X1 Y1 Z1 ... Xn Yn Zn Ks Kn O1 O2 O3 texture_id
 object=disk X Y Z A R G B outer_radius inner_radius NX NY NZ kd ka ks kn o1 o2 o3
 object=ellipse F1x F1y F1z F2x F2y F2z A R G B K Nx Ny Nz kd ka ks kn o1 o2 o3
-object=cylinder X0 Y0 Z0 Qx Qy Qz radius B F alpha R G B kd ka [ks kn [o1 o2 [o3]]] [cut_planes=N ID1 ... IDN]
+object=cylinder X0 Y0 Z0 Qx Qy Qz radius B F alpha R G B kd ka [ks kn [o1 o2 [o3]]] [texture_id] [cut_planes=N ID1 ... IDN]
 object=cone X0 Y0 Z0 Qx Qy Qz M N B F alpha R G B kd ka [ks kn [o1 o2 [o3]]] [cut_planes=N ID1 ... IDN]
 cut_plane=ID A B C D
 object=<geometria existente> ... cut_planes=N ID1 ... IDN
 object=quadric X Y Z alpha R G B kd ka ks kn o1 o2 o3 A B C D E F G H I J [cut_planes=N ID1 ... IDN]
 
-Texturas AVS para polígonos:
-Coloque cada archivo como textures/ID.avs. El ID sigue a O2 si se omite O3;
-si se especifica O3, use el orden O1 O2 O3 texture_id. Use ID 0 para indicar
-que el polígono conserva su color RGBA aunque se especifique O3. Los IDs
-positivos se cargan al iniciar la escena.
+Texturas AVS para polígonos, esferas y cilindros:
+Coloque cada archivo como textures/ID.avs. Use ID 0 para conservar el color
+RGBA del objeto. Los IDs positivos se cargan al iniciar la escena.
+Para esferas y cilindros, agregue texture_id después de los parámetros de
+material. Si se omite O3, el ID puede seguir a Ks Kn; si se especifica O3,
+use el orden Ks Kn O1 O2 O3 texture_id.
+Las esferas usan coordenadas longitud/latitud y los cilindros envuelven la
+textura alrededor del eje, mapeando B..F sobre la longitud lateral.
 
 O1, O2 y O3 son los pesos del color propio, reflejado y transmitido; deben sumar 1.
 Los formatos anteriores pueden omitir O3, cuyo valor por defecto es 0. La
